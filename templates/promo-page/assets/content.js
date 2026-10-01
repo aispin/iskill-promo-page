@@ -3,11 +3,14 @@
  *
  * 结构：
  *   PROMO.brand / brand2  —— 品牌色（会注入 CSS 变量，换色不用改样式）
- *   PROMO.name / repo / install / license …—— 全局信息
+ *   PROMO.name / repo / installPrompt / license …—— 全局信息
  *   PROMO.lang.zh / .en   —— 双语文案（键必须两边都有，缺了会显示成空）
  *
  * 文案里的 HTML 只允许少量行内标签（<code>、<b>），卡片描述走 innerHTML，
  * 其余一律 textContent，别塞脚本。
+ *
+ * 安装方式默认是「让 agent 去装」——一键复制的是说给 AI 的一句话，
+ * 由 repo 自动推导，**不需要你写安装命令**。
  *
  * 本文件是「示例技能」，复制后请整体替换掉。
  * ==========================================================================*/
@@ -17,7 +20,15 @@ window.PROMO = {
   brand2: "#22d3ee",
   repo: "https://github.com/aispin/iskill-example",
   repoLabel: "aispin/iskill-example",
-  install: "git clone https://github.com/aispin/iskill-example.git ~/.workbuddy/skills/iskill-example",
+
+  /* 默认提示词就是「请帮我安装 Skill：<repo>，并告诉我它的用法」，中英各一份。
+     只有想换话术时才需要打开下面这段（可用 {repo} / {repoShort} / {name} 占位符），
+     例如要指定安装目录、或必须先装依赖：
+  installPrompt: {
+    zh: "请帮我安装 Skill：{repo}，装到 ~/.workbuddy/skills/ 下，并告诉我它的用法",
+    en: "Install {repo} into ~/.workbuddy/skills/ and tell me how to use it"
+  },
+  */
   license: "MIT",
 
   lang: {
@@ -28,15 +39,17 @@ window.PROMO = {
         description: "示例技能：一句话说清它替你省掉什么。"
       },
       a11y: { skip: "跳到主要内容" },
+      /* 复制按钮的反馈文案（切语言会跟着换） */
+      ui: { copy: "复制", copied: "已复制", failed: "复制失败" },
       nav: { features: "能力", shots: "截图", how: "上手", faq: "问答" },
 
       hero: {
-        badge: "WorkBuddy 技能",
+        badge: "AI 技能",
         titlePre: "把你的重复劳动",
         titleAccent: "压成一行",
         titlePost: "",
         sub: "用一句话说清楚：谁在什么场景下，因为这个技能少做了什么。",
-        ctaPrimary: "复制安装命令",
+        ctaPrimary: "复制安装提示词",
         ctaSecondary: "看源码",
         meta1: "零依赖",
         meta2: "本地运行",
@@ -61,7 +74,7 @@ window.PROMO = {
         title: "以前 vs 现在",
         sub: "",
         before: { title: "没有这个技能", items: ["每次都要重新写一遍样板", "容易踩坑，重试成本高"] },
-        after: { title: "有了这个技能", items: ["一行命令跑完", "坑已经写进文档"] }
+        after: { title: "有了这个技能", items: ["一句话让 agent 装好", "坑已经写进文档"] }
       },
 
       features: {
@@ -90,7 +103,8 @@ window.PROMO = {
         title: "三步跑起来",
         sub: "",
         items: [
-          { title: "拿到它", desc: "克隆到技能目录。", codeName: "bash", code: "# 克隆到技能目录\ngit clone https://github.com/aispin/iskill-example.git ~/.workbuddy/skills/iskill-example" },
+          /* codeKey: "install" = 自动填入安装提示词（随语言切换），别手抄 URL */
+          { title: "交给 AI 装", desc: "把这句话粘进对话框，agent 会自己拉代码、读文档，再告诉你用法。", codeKey: "install" },
           { title: "跑一次", desc: "最常用的一条命令。", codeName: "bash", code: "bash scripts/run.sh --fast" }
         ]
       },
@@ -98,10 +112,13 @@ window.PROMO = {
       faq: {
         eyebrow: "问答",
         title: "常见问题",
-        items: [{ q: "需要联网吗？", a: "默认不需要，全部本地运行。" }]
+        items: [
+          { q: "能不能不用 AI，手动装？", a: "可以。把仓库 clone 进你的 agent 技能目录（如 <code>~/.workbuddy/skills/</code>）就行 —— 技能本身是纯文本加脚本，没有构建步骤。" },
+          { q: "需要联网吗？", a: "装的时候需要，之后默认全部本地运行。" }
+        ]
       },
 
-      cta: { title: "现在就来一发", desc: "克隆下来，30 秒看到效果。", primary: "去 GitHub 看看", secondary: "复制安装命令" },
+      cta: { title: "现在就来一发", desc: "把提示词粘给 AI，30 秒看到效果。", primary: "去 GitHub 看看", secondary: "复制安装提示词" },
       footer: { license: "MIT 许可", madeWith: "由 iskill-promo-page 生成" }
     },
 
@@ -112,15 +129,16 @@ window.PROMO = {
         description: "A sample skill: say in one line what it saves you."
       },
       a11y: { skip: "Skip to content" },
+      ui: { copy: "Copy", copied: "Copied", failed: "Copy failed" },
       nav: { features: "Features", shots: "Screens", how: "Get started", faq: "FAQ" },
 
       hero: {
-        badge: "WorkBuddy skill",
+        badge: "AI skill",
         titlePre: "Turn your busywork into ",
         titleAccent: "one command",
         titlePost: "",
         sub: "One sentence: who, in what situation, stops doing what because of this skill.",
-        ctaPrimary: "Copy install command",
+        ctaPrimary: "Copy install prompt",
         ctaSecondary: "View source",
         meta1: "Zero deps",
         meta2: "Runs locally",
@@ -145,7 +163,7 @@ window.PROMO = {
         title: "Before vs after",
         sub: "",
         before: { title: "Without it", items: ["Rewrite the boilerplate every time", "Easy to trip on known traps"] },
-        after: { title: "With it", items: ["One command does the job", "The traps are already documented"] }
+        after: { title: "With it", items: ["One sentence and your agent installs it", "The traps are already documented"] }
       },
 
       features: {
@@ -171,7 +189,7 @@ window.PROMO = {
         title: "Up and running in three steps",
         sub: "",
         items: [
-          { title: "Get it", desc: "Clone into your skills directory.", codeName: "bash", code: "# clone into the skills dir\ngit clone https://github.com/aispin/iskill-example.git ~/.workbuddy/skills/iskill-example" },
+          { title: "Let your agent install it", desc: "Paste the line into the chat — it clones the repo, reads the docs, and tells you how to use it.", codeKey: "install" },
           { title: "Run it once", desc: "The command you will use most.", codeName: "bash", code: "bash scripts/run.sh --fast" }
         ]
       },
@@ -179,10 +197,13 @@ window.PROMO = {
       faq: {
         eyebrow: "FAQ",
         title: "Frequently asked",
-        items: [{ q: "Does it need network access?", a: "No — everything runs locally." }]
+        items: [
+          { q: "Can I install it without an agent?", a: "Sure. Clone the repo into your agent's skills directory (e.g. <code>~/.workbuddy/skills/</code>) — it is plain text plus scripts, with no build step." },
+          { q: "Does it need network access?", a: "Only to install. Everything else runs locally." }
+        ]
       },
 
-      cta: { title: "Give it a spin", desc: "Clone it and see results in 30 seconds.", primary: "Open on GitHub", secondary: "Copy install command" },
+      cta: { title: "Give it a spin", desc: "Paste the prompt into your agent and see results in 30 seconds.", primary: "Open on GitHub", secondary: "Copy install prompt" },
       footer: { license: "MIT licensed", madeWith: "Built with iskill-promo-page" }
     }
   }

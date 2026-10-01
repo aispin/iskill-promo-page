@@ -40,6 +40,7 @@
 .topbar    ← 吸顶玻璃栏：品牌 / 导航 / 中英分段 / 主题按钮 / GitHub
 main
   1 .hero       两栏：左文案（badge→h1→sub→CTA→meta） 右终端窗（透视倾斜）
+                └ badge 固定「AI 技能 / AI skill」，**不写平台名** —— 技能跨 agent 通用
   2 .stats      3 张数字卡（渐变大字）
   3 .compare    左“以前”右“现在”，后者带品牌色描边+辉光
   4 .features   3×2 能力卡（内联 SVG 图标 + 悬浮光晕）
@@ -64,8 +65,20 @@ footer
 | `compare.before/after` | `#compare .grid` | `{title, items[]}` |
 | `features.items[]` | `#features .grid` | `{icon, title, desc}`，**desc 走 innerHTML，可以用 `<code>`** |
 | `showcase.items[]` | `#shots .grid` | `{src, alt, caption}`，空数组隐藏整段 |
-| `steps.items[]` | `#how .list` | `{title, desc, codeName, code}`，`code` 里 `#` 开头会被着成注释 |
+| `steps.items[]` | `#how .list` | `{title, desc, codeName, code}`，`code` 里 `#` 开头会被着成注释；写 `codeKey:"install"` 则换成安装提示词（见下） |
 | `faq.items[]` | `#faq .list` | `{q, a}` |
+| `ui.{copy,copied,failed}` | 各处复制按钮 | 三种反馈文案，随语言切换 |
+
+### 安装提示词（这是本模板的默认安装方式）
+
+Hero 与结尾 CTA 的复制按钮、以及 `codeKey:"install"` 的那一步，复制/展示的都是**说给 AI 的一句话**，
+由 `repo` 推导（zh：`请帮我安装 Skill：{repo}，并告诉我它的用法`）。想换话术用 `installPrompt:{zh,en}` 覆盖，
+占位符支持 `{repo}` / `{repoShort}` / `{name}`。
+
+- 推导发生在 `render()` 里，**所以它会跟着语言切换**（切到 EN 就是英文提示词）。
+- 提示词块走 `.code-prompt`：品牌色描边 + `white-space:pre-wrap`（长 URL 换行，不横向滚动），
+  并且**跳过 `#` 注释着色** —— 提示词不是 shell，URL 里出现 `#` 时染色会很难看。
+- 代码块底色两套主题都是深的，所以提示词文字色写死亮的，**不能**用 `var(--ink)`。
 
 ⚠️ `#how` 是 section 的 id（不是 `#steps`），`app.js` 里查的就是它 —— 改 id 要同步改三处（HTML / app.js / 导航锚点）。
 

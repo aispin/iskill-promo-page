@@ -66,9 +66,9 @@ window.PROMO = {
   brand: "#7c5cff",  brand2: "#22d3ee",   // 品牌色会注入 CSS 变量
   repo: "https://github.com/aispin/iskill-xxx",
   repoLabel: "aispin/iskill-xxx",         // 可选：顶栏胶囊显示的仓库名，不写就从 repo 推导
-  install: "git clone …",                 // 顶部「复制安装命令」复制的内容
+  // installPrompt: { zh, en },           // 可选：覆盖默认的安装提示词，可用 {repo}/{repoShort}/{name}
   lang: {
-    zh: { meta, nav, hero, terminal, stats, compare, features, showcase, steps, faq, cta, footer },
+    zh: { meta, ui, nav, hero, terminal, stats, compare, features, showcase, steps, faq, cta, footer },
     en: { /* 同上，键一一对应，缺了会渲染成空 */ }
   }
 };
@@ -76,10 +76,27 @@ window.PROMO = {
 
 外加 `index.html` 顶部那 8 行 meta（title / description / theme-color / og:*）。
 
+**安装方式默认是「让 agent 去装」，不用你写安装命令。** 两个复制按钮（Hero + 结尾 CTA）复制的内容由 `repo`
+自动推导：
+
+| 语言 | 复制出来的内容 |
+|---|---|
+| zh | `请帮我安装 Skill：https://github.com/aispin/iskill-xxx，并告诉我它的用法` |
+| en | `Install this skill: https://github.com/aispin/iskill-xxx and tell me how to use it` |
+
+两个地方会用到它：① `#hero-copy` / `#cta-copy` 按钮；② `steps` 里写 `codeKey: "install"` 的那一步（会渲染成
+一个带品牌色描边的 `prompt` 代码块）。**别在 content.js 里手抄一遍 URL** —— 改仓库地址时只改一处。
+
+`ui: { copy, copied, failed }` 是复制按钮的三种反馈文案，随语言切换；不写就回落成中文默认值。
+
 > 仓库名越长，顶栏越早进入降级（截断 → 只留图标）。`owner/repo` 超过 ~20 字符就别再手动加长 `repoLabel`，
 > 顶栏那点位置不够 —— 完整名字在正文与页脚都还有地方放。
 
 **页面八段**（按顺序）：Hero（标题+副标题+CTA+终端窗）→ 数字条 → 之前/现在对比 → 能力卡 → 实拍图 → 三步上手（带代码块）→ 问答 → 结尾 CTA。
+
+> Hero 标题上方那个标签固定写「**AI 技能** / **AI skill**」，**不要写平台名**。这些技能是纯文本 + 脚本，
+> Claude Code、Cursor、Codex 等任何能读 SKILL.md 的 agent 都能装能用，写成某个平台专属会劝退一半人。
+
 
 ## 四、主题与语言（默认都跟随系统）
 
@@ -108,6 +125,9 @@ window.PROMO = {
    三件事同时发生：品牌名塌成 `I…` + 导航在词中间折行（36px 的链接被撑到 59px、顶破 62px 顶栏）+
    长仓库名胶囊纹丝不动。规则：**控件 `flex:none` 永不动 → 导航 `nowrap` 永不折行 → 品牌最后退**。
    完整阶梯与临界值推导见 `references/design-guide.md` §六。
+8. **安装路径讲「让 agent 装」，别让用户抄命令。** 一键复制的是说给 AI 的一句话（由 `repo` 推导）。
+   写死 `~/.workbuddy/skills/` 这类路径等于替用户做了错决定 —— 装哪个目录取决于他用哪个 agent。
+   手动安装方式作为**逃生口放进 FAQ**（"能不能不用 AI，手动装？"），而不是当成主推路径。
 
 ## 六、交付前自查
 
@@ -120,6 +140,7 @@ $N <ui-verify>/scripts/ui.mjs check --url "http://127.0.0.1:8899/?reveal=all&lan
   --case "能力卡=document.querySelectorAll('#features .feat').length>3" \
   --case "步骤齐=document.querySelectorAll('#how .step').length>=3" \
   --case "问答齐=document.querySelectorAll('#faq details').length>=3" \
+  --case "复制的是提示词=/^请帮我安装 Skill：https:\/\/github\.com\//.test(document.querySelector('#hero-copy').getAttribute('data-copy'))" \
   --case "无占位残留=!/示例技能|Example skill|ISKILL-EXAMPLE/.test(document.body.innerText)"
 
 # 顶栏：≥4 档宽度都要过（折行 / 塌缩 / 横向滚动 是三种互相独立的失败模式，只测一种会漏）
@@ -219,6 +240,10 @@ bash scripts/pages.sh workflow aispin/iskill-xxx --apply     # 模式 ①
 | 某张卡片截出来是纯背景 | 元素在视口外（见 iskill-ui-verify：脚本会自动撑高视口，仍失败就用 `--full` 整页截） |
 | 实拍图位置是空的 | 图片 `loading="lazy"` 未加载 → ui-verify 已在截图前顶成 eager；手写脚本时要注意 |
 | 英文版有空段落 | `content.js` 里 en 漏了同名键（zh 是 key 源，两边必须一一对应） |
+| 点完复制按钮，标签永久变成「复制」 | 老版 `app.js` 的 `bindCopy()` 把还原文案写死成 `"复制"` 了 —— 它会覆盖掉「复制安装提示词」这类标签。新版先存原文案再改，且只在自己还停在反馈文案时才还原（期间切了语言就不会被旧语言盖回去） |
+| 按钮复制出来还是 `git clone …` | 页面里还有老版 `app.js` / `content.js`（老版读 `PROMO.install`）。新版不看 `install`，改由 `repo` 推导提示词 —— 同步这两个文件即可自愈 |
+| Hero 标签写着「WorkBuddy 技能」 | 技能不只一个平台能用，改回「AI 技能 / AI skill」，别写平台名 |
+| 提示词块出现横向滚动条 | `.code-prompt pre` 少了 `white-space:pre-wrap` —— 长 URL 必须换行，不能靠滚动 |
 | 换品牌色没生效 | 改到 `style.css` 了 → 应该改 `content.js` 的 `brand`/`brand2` |
 | 切语言后 `<title>` 没变 | 正常：`<title>` 由 `dict.meta.title` 覆盖，检查该键是否存在 |
 | Pages 上图片 404 | 引用了 `.github/` 下的资源（该路径被 Pages 封锁）或用了绝对路径 |

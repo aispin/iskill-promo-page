@@ -138,7 +138,8 @@ if (branchMode) {
 
 console.log(`
 下一步（逐技能唯一要做的事）：
-  1. 改 ${outName}/assets/content.js —— 品牌色、仓库地址、install 命令、中英文案
+  1. 改 ${outName}/assets/content.js —— 品牌色、仓库地址、中英文案
+     （安装提示词不用写：由 repo 自动推导成「请帮我安装 Skill：<repo>，并告诉我它的用法」）
   2. 改 ${outName}/index.html 顶部 8 行 meta（title / description / og:*）与 <html> 里的名称
   3. 放图标与截图：${outName}/assets/favicon.svg、apple-touch-icon.png、shot-*.png
   4. 本地自查（可选）：
