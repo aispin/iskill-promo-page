@@ -104,8 +104,28 @@ window.PROMO = {
 
 **页面八段**（按顺序）：Hero（标题+副标题+CTA+终端窗）→ 数字条 → 之前/现在对比 → 能力卡 → 实拍图 → 三步上手（带代码块）→ 问答 → 结尾 CTA。
 
-> Hero 标题上方那个标签固定写「**AI 技能** / **AI skill**」，**不要写平台名**。这些技能是纯文本 + 脚本，
-> Claude Code、Cursor、Codex 等任何能读 SKILL.md 的 agent 都能装能用，写成某个平台专属会劝退一半人。
+> **Hero 标题上方是两个标签**（`content.js` 驱动）：
+>
+> | 标签 | 内容 | 怎么写 |
+> |---|---|---|
+> | 第 1 枚（固定） | 「**AI 技能** / **AI skill**」 | 写死，不用管。**别写 agent 平台名**——这些技能是纯文本 + 脚本，Claude Code、Cursor、Codex 等任何能读 SKILL.md 的 agent 都能装能用，写成某一家专属会劝退一半人 |
+> | 第 2 枚（平台兼容性） | macOS / Windows / Mac&Win | `content.js` 的 `platform` 字段，见下表 |
+>
+> ```js
+> platform: "mac-windows"   // 默认值
+> ```
+>
+> | 取值 | 显示 | 什么时候用 |
+> |---|---|---|
+> | `"mac-windows"` | macOS / Windows | 脚本两边都能跑 |
+> | `"macos"` | 仅 macOS | 用到 `sips` / `osascript` / `open` / `lsof` / `/opt/homebrew` 硬路径 |
+> | `"windows"` | 仅 Windows | 依赖 Windows 独有能力（如 UI 自动化） |
+> | `"linux"` | 仅 Linux | 同上 |
+> | `"all"` | 全平台 | 纯提示词 / 纯 Node·Python 且不调平台命令 |
+> | `""` | 隐藏整条 | 不想声明 |
+> | `{ zh: "…", en: "…" }` | 自定义文案 | 想写得更具体（如「macOS 10.15+」） |
+>
+> ⚠️ **标错比不写更糟** —— 用户照标签装了发现跑不了，比没标签伤害大。判据见 `content.js` 的注释。
 
 ### 槽位：把「本技能特有」的东西插进页面
 

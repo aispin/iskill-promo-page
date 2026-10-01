@@ -39,8 +39,8 @@
 .bg-grid   ← 网格线（fixed，径向 mask 只在顶部可见）
 .topbar    ← 吸顶玻璃栏：品牌 / 导航 / 中英分段 / 主题按钮 / GitHub
 main
-  1 .hero       两栏：左文案（badge→h1→sub→CTA→meta） 右终端窗（透视倾斜）
-                └ badge 固定「AI 技能 / AI skill」，**不写平台名** —— 技能跨 agent 通用
+  1 .hero       两栏：左文案（badge行→h1→sub→CTA→meta） 右终端窗（透视倾斜）
+                 └ badge 行 = 「AI 技能」固定 + 平台兼容性（content.js 的 platform）
   2 .stats      3 张数字卡（渐变大字）
   3 .compare    左“以前”右“现在”，后者带品牌色描边+辉光
   4 .features   3×2 能力卡（内联 SVG 图标 + 悬浮光晕）
@@ -274,3 +274,41 @@ $N <ui-verify>/scripts/ui.mjs check --url "…/usage.html" --width 1180 --height
 
 > 什么时候该改判据：如果哪天落地页要「在线跑一次真实初始化并展示结果」，那它就有状态了，
 > 该拆成 dashboard 式应用 —— 但那时它也不再是「落地页」了。
+
+## 十、Hero 的两个标签（含平台兼容性）
+
+Hero 标题上方是一个 `.hero-kicker` 行，放**两枚** badge：
+
+| 位置 | 内容 | 来源 | 规则 |
+|---|---|---|---|
+| 第 1 枚 | 「AI 技能 / AI skill」 | `lang.zh/en` 的 `hero.badge` | **固定文案，且不写 agent 平台名** —— 技能跨 agent 通用（Claude Code / Cursor / Codex 都能装），标一家会劝退一半人 |
+| 第 2 枚 | macOS / Windows / 仅 macOS … | `content.js` **顶层**的 `platform` | 由 `renderPlatformBadge(lang)` 渲染 |
+
+**为什么第 2 枚值得存在**：这些技能不少是「macOS 写脚本、Windows 跑不了」的
+（`sips` / `osascript` / `/opt/homebrew` 硬路径），再不然依赖 ffmpeg、剪映这类有明显平台差异的外部件。
+用户扫一眼落地页首先想知道的就是「我这台机器能不能用」。**这是操作系统兼容性，
+和第 1 枚那条「别写 agent 平台名」的规则不冲突** —— 两者说的是完全不同的「平台」。
+
+取值与判据（照实写，判据细节见 `templates/promo-page/assets/content.js` 的注释）：
+
+| 取值 | 显示 | 判据 |
+|---|---|---|
+| `"mac-windows"` | macOS / Windows | 两边都能跑 |
+| `"macos"` | 仅 macOS | 出现 `sips` / `osascript` / `pbcopy` / `open` / `lsof` / `/opt/homebrew` 硬路径 |
+| `"windows"` | 仅 Windows | 依赖 Windows 独有能力（如 UI 自动化） |
+| `"linux"` | 仅 Linux | 同上 |
+| `"all"` | 全平台 | 纯提示词（无脚本），或纯 Node/Python 且不调平台命令 |
+| `""` | 隐藏整条（`hidden`，零占位） | 不想声明 |
+| `{ zh, en }` | 自定义文案 | 想写更具体的（如「macOS 10.15+」） |
+
+**两条硬约束**：
+
+1. **不配 = 不占位。** 骨架里那枚 badge 带 `hidden` 属性，`renderPlatformBadge` 在
+   文本为空时保持 `hidden`；`.badge-os[hidden]{display:none}` 兜底。所以老的落地页
+   （`content.js` 里没有 `platform`）视觉上零变化 —— 和槽位的「不配就没有」同一条原则。
+2. **标错比不写更糟。** 用户照标签装了发现跑不了，比压根没标签伤害大。判据要照着
+   **代码里实际出现的平台命令**写，不要按「理想中应该支持」写。
+
+> 更新老落地页：往它的 `content.js` 顶层加一行 `platform: "macos"` 即可，
+> 模板与 `app.js` 无需再动（`init.mjs --out .` 重铺时同名文件默认跳过，
+> 记得只改 `content.js` 与 `index.html` 的 meta，别整目录覆盖）。

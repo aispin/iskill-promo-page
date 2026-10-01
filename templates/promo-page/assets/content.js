@@ -31,6 +31,22 @@ window.PROMO = {
   */
   license: "MIT",
 
+  /* ── 平台兼容性标签（Hero 标题上方，「AI 技能」右边那枚）──────────────────
+   *
+   * 用户扫一眼就想知道「我这台机器能不能用」—— 这里填的是**操作系统**兼容性。
+   * 取值：
+   *   "mac-windows" | "macos" | "windows" | "linux" | "all"
+   *   ""                  → 整条隐藏（不占位）
+   *   { zh: "…", en: "…" } → 自定义文案
+   *
+   * ⚠️ 只填脚本真的跑得起来的范围。判据（照实写，别美化）：
+   *   · 出现 sips / osascript / pbcopy / open / lsof / /opt/homebrew 硬路径 → 仅 macOS
+   *   · 有 .ps1 / taskkill / %APPDATA% / process.platform==="win32" 分支   → 支持 Windows
+   *   · 纯提示词（无脚本），或纯 Node/Python 且不调平台命令               → "all"
+   * 标错比不写更糟：用户照标签装了发现跑不了，比没标签伤害大。
+   */
+  platform: "mac-windows",
+
   /* ── 槽位：往落地页里插入「这个技能特有的内容」 ──────────────────────────
    *
    * 骨架在 Hero 的 CTA 按钮下方留了 <div class="slot" data-slot="hero">，
