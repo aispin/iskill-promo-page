@@ -1,7 +1,7 @@
 ---
 name: iskill-promo-page
-summary: 给任何 skill / 工具 / 项目生成落地推广页（中英双语 + 深浅色跟随系统），静态自包含、零依赖零构建，附 GitHub Pages 工作流与免工作流发布方案。
-description: 当用户要给某个 skill、工具、开源项目做「落地页 / 推广页 / 介绍页 / landing page」，或要把静态页发布到 GitHub Pages 时使用。触发词：落地页、推广页、landing page、介绍页、主页、gh-pages、GitHub Pages、宣传页。产出 <目标>/promo-page/（或 --out docs/）自包含静态站点 + 可选 .github/workflows/promo-page.yml，逐技能只需改一个内容文件。
+summary: 给任何 skill / 工具 / 项目生成落地推广页（中英双语 + 深浅色跟随系统），静态自包含、零依赖零构建，附一键推 gh-pages 与 GitHub Pages 各种发布方案。
+description: 当用户要给某个 skill、工具、开源项目做「落地页 / 推广页 / 介绍页 / landing page」，或要把静态页部署发布到 GitHub Pages / gh-pages 时使用。触发词：落地页、推广页、landing page、介绍页、主页、gh-pages、GitHub Pages、宣传页、部署落地页。产出 <目标>/promo-page/（或 --out docs/）自包含静态站点 + 可选 .github/workflows/promo-page.yml + scripts/deploy.sh（一键推发布分支），逐技能只需改一个内容文件。
 ---
 
 # iskill-promo-page 落地推广页生成器
@@ -147,9 +147,52 @@ done
 | **① Actions 产物**（默认） | `promo-page/` | `promo-page.yml` | Source = **GitHub Actions** |
 | **② 免工作流** | `docs/`（`--out docs`） | 无 | Deploy from a branch → `main` / **`/docs`** |
 | ③ 免工作流 · 根目录 | 仓库根 | 无 | Deploy from a branch → `main` / `/(root)` |
-| ④ gh-pages 分支 | 任意 | `promo-page-branch.yml` 或手动 `git subtree push` | Deploy from a branch → `gh-pages` / `/(root)` |
+| **④ gh-pages 分支** | 任意 | `promo-page-branch.yml` 或 **`scripts/deploy.sh`** | Deploy from a branch → `gh-pages` / **`/(root)`** |
 
 模式之间**别同时开**（分支模式与 Actions 产物会互相覆盖，表现是「改了不生效」）。
+
+### 7.1 一键部署（目标项目是 git 仓库时）
+
+**要发布，直接跑这一条**——它会探测站点目录、把内容推成本地 `gh-pages` 分支、再尽力 `git push`：
+
+```bash
+S=<SKILL_DIR>/scripts/deploy.sh                # <SKILL_DIR> = 本技能所在目录
+
+bash $S <目标目录>              # 建本地 gh-pages 分支 + 尝试推送
+bash $S <目标目录> --set-pages  # 推完顺手把 Pages 指向 gh-pages
+bash $S <目标目录> --dry-run    # 只看计划，不写任何 ref、不推送
+```
+
+> 站点目录（`promo-page/` 或 `docs/`）留在**目标项目**里，部署脚本留在**本技能**里 —— 目标项目不需要多出一堆部署脚本。
+
+| 参数 | 作用 |
+|---|---|
+| `--dir <name>` | 站点目录名，默认自动探测 `promo-page/` → `docs/` |
+| `--branch <name>` | 发布分支名，默认 `gh-pages` |
+| `--repo <owner/repo>` | 直接指定 GitHub 仓库（优先级最高；本地没配 remote 时很有用） |
+| `--no-push` | 只更新本地发布分支，不推远端 |
+| `--dry-run` | 只打印计划 |
+| `--set-pages` | 推成功后调 `pages.sh gh-pages --apply` 配好 Pages |
+
+行为约定（**重要，别当成故障**）：
+
+- **只在 git 项目里生效**：不是 git 仓库、或目录里没有落地页 → 打印 `⏭ 跳过…` 并以**退出码 3** 结束，不算失败。
+- **产出单条发布提交**：发布分支的根 = 站点目录的内容，与源码历史彻底解耦（不像 `git subtree push` 会把整个 `main` 历史拖进去）。
+- **不切分支、不建临时工作区、不碰未提交改动**：用 git 底层命令（`read-tree`/`write-tree`/`commit-tree`）直接构造提交再 `update-ref`。所以**工作区脏也能跑**，发布的是工作区当前实际内容（含未提交的改动）。
+- **幂等**：内容与上次发布相同就跳过提交、也不重复推送；重跑是真正的 no-op。
+- **远端解析顺序**：`--repo` → `remote origin` → 用目录名 + `gh` 猜同名仓库（很多本地仓库是 token 直推建起来的，从没配过 remote）。
+- **推送按统一配方**：代理 + `-c credential.helper=`（置空，防钥匙串弹窗）+ token 内嵌 + 推完 `ls-remote` 核对 sha；失败先换 HTTP 版本重试，仍失败就打印手工命令 —— **脚本不会因推送失败而报错退出**。
+- 自动排除 `.DS_Store`、`.git`；站点目录缺 `.nojekyll` 会警告（分支模式下它决定要不要走 Jekyll）。
+
+推送成功后仍差最后一步 —— 让 Pages 认这个分支：
+
+```bash
+bash scripts/pages.sh gh-pages <owner/repo> --apply      # 或网页点 Settings → Pages
+```
+
+（`deploy.sh --set-pages` 可以把这步合并进去。）
+
+### 7.2 用脚本配 Pages
 
 用脚本配 Pages，省得去网页点：
 
@@ -182,12 +225,18 @@ bash scripts/pages.sh workflow aispin/iskill-xxx --apply     # 模式 ①
 | **Settings 里选不到 `promo-page` 目录** | Pages 分支模式只认 `/` 与 `/docs`。要么用工作流，要么 `--out docs` 重铺。见 `references/deploy-modes.md` |
 | 站点打开是 README 而不是落地页 | 发布源目录选错（选到了根）→ 改 Folder；或用的是分支模式但目录名不是 `/docs` |
 | 页面报 Liquid / `{{ }}` 语法错 | 分支模式下 Jekyll 在处理文件 → 站点目录里必须有 `.nojekyll`（模板自带，别删） |
-| 改了 `promo-page/` 但线上没变 | ① 工作流 `paths` 没命中（目录改名了？）② 用的是分支模式而目录名不是 `/docs` ③ 两种模式同时开着互相覆盖 |
+| 改了 `promo-page/` 但线上没变 | ① 工作流 `paths` 没命中（目录改名了？）② 用的是分支模式而目录名不是 `/docs` ③ 两种模式同时开着互相覆盖 ④ 分支模式但**没重跑 `deploy.sh`** |
+| `deploy.sh` 打印 `⏭ 跳过` 并退出码 3 | 有意为之：目标不是 git 仓库，或目录里没有 `promo-page/`/`docs/`。先 `git init` / 先跑 `init.mjs` |
+| `deploy.sh` 说「没找到 GitHub 远端」但仓库明明在 GitHub | 本地仓库没配 remote。加 `--repo owner/repo`，或 `git remote add origin …`（很多仓库是 token 直推建的，从来没配过 remote） |
+| `deploy.sh` 重跑没产生新提交 | 幂等设计：站点内容与上次发布完全一致就不落空提交。改了页面自然会有 |
+| 远端 `gh-pages` 内容对，Pages 还是 404 | 只推了分支，**没把 Pages 指向它** → `bash scripts/pages.sh gh-pages <owner/repo> --apply`，或 `deploy.sh --set-pages` |
+| `deploy.sh` 推完提示「推送未成功」 | 网络/凭据问题，本地分支已就绪。按提示手动 `git push` 重试；脚本不会因此报错退出（退出码仍是 0） |
 
 ## 九、扩展
 
 - 加/删段落：`index.html` 里删掉对应 `<section>`，`app.js` 里去掉那次 `render*` 调用。段落顺序即 DOM 顺序。
 - 加图标：往 `assets/icons.js` 里加一条 24×24、`stroke-width=1.7` 的 SVG 字符串，然后 `icon: "新键名"`。
+- 改完页面**重新发布**：`bash <SKILL_DIR>/scripts/deploy.sh <目标目录>`（幂等，内容没变就不推）。
 - 改设计系统（间距、圆角、字体、动效）：见 `references/design-guide.md`。
 - 换部署方式：见 `references/deploy-modes.md`。
 - 参考实例：`ISkills/iskill-ui-verify/promo-page/`（紫青）、`ISkills/iskill-headroom-workbuddy/promo-page/`（品牌绿 + 真实控制台截图）。

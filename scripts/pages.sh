@@ -117,8 +117,10 @@ case "$MODE" in
 
   gh-pages)
     M=$(method)
-    echo "══ 分支模式 · gh-pages /(root)（配 promo-page-branch.yml）══"
-    echo "  工作流会把站点目录的内容强推到 gh-pages 分支根目录。"
+    echo "══ 分支模式 · gh-pages /(root) ══"
+    echo "  前提：gh-pages 分支上已有站点内容。两种推法（二选一）："
+    echo "    A. 本地直接推（不需要工作流）：bash scripts/deploy.sh <目标目录> --set-pages"
+    echo "    B. 用工作流：init.mjs --branch-mode，推 main 后由 promo-page.yml 强推到 gh-pages"
     echo "  ▶ $GH api -X $M repos/$REPO/pages $(quote_f 'source[branch]=gh-pages') $(quote_f 'source[path]=/')"
     if [ "$APPLY" = "1" ]; then
       "$GH" api -X "$M" "repos/$REPO/pages" -f "source[branch]=gh-pages" -f "source[path]=/" --silent

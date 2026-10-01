@@ -78,18 +78,29 @@ bash scripts/pages.sh root <owner/repo> --apply
 站点内容推到 `gh-pages` 分支根目录，Pages 指向该分支。
 
 ```bash
-node scripts/init.mjs --target /path/to/iskill-xxx --branch-mode   # 用工作流自动推
-# 或者零工作流、每次手动推：
-git subtree push --prefix promo-page origin gh-pages
+# 一条命令：探测站点目录 → 建/更新本地 gh-pages → 尽力 push
+bash scripts/deploy.sh /path/to/iskill-xxx
+bash scripts/deploy.sh /path/to/iskill-xxx --set-pages   # 推完顺手把 Pages 指向它
+bash scripts/deploy.sh /path/to/iskill-xxx --dry-run     # 只看计划
 ```
 
 设置：**Settings → Pages → Deploy from a branch → gh-pages / `/(root)`**（`bash scripts/pages.sh gh-pages <owner/repo> --apply`）
 
+`deploy.sh` 的实质：用 git 底层命令（`read-tree` → `add` → `write-tree` → `commit-tree`）**直接构造一条提交**，
+其内容就是站点目录的内容，再 `update-ref refs/heads/gh-pages` 建出本地分支 —— **不切分支、不建临时工作区、
+不碰未提交改动**，所以工作区脏也能安全跑，且发布的是工作区当前实际内容。
+
 - ✅ Pages 源分支与源码分支彻底解耦，`main` 上不出现网站目录。
-- ⚠️ 手动 `git subtree push` 容易被忘记 —— 那还不如模式 ②。
+- ✅ **单条发布提交**，不会把 `main` 的整条历史带进发布分支（`git subtree push` 会）。
+- ✅ 幂等：内容没变就跳过提交、不重复推送。
+- ✅ 推送失败不致命：脚本打印手工命令后正常结束，本地分支已就绪。
+- ⚠️ 每次改完页面要**重跑 `deploy.sh`**（或者用 `--branch-mode` 挂工作流，推 `main` 自动发）。
+- ⚠️ 分支根必须有 `.nojekyll`（模板自带），否则可能走 Jekyll 构建。
 - ⚠️ 官方说明（**未在本机实测**）：用 `GITHUB_TOKEN` 推的提交不再触发 Pages 的 *build*，
-  但内置的 `pages-build-deployment` 流程会识别到「该分支无需构建」并直接部署 ——
-  所以**分支根必须有 `.nojekyll`**（模板里已带），否则可能走 Jekyll 构建。
+  但内置的 `pages-build-deployment` 流程会识别到「该分支无需构建」并直接部署。
+
+> 老办法 `git subtree push --prefix promo-page origin gh-pages` 也能用，但两个坑：① 要求该目录**已在历史
+> 中被跟踪过**，首次用常报 `You need to merge ... first`；② 会把 `main` 的整条历史带进发布分支。
 
 ---
 
@@ -100,7 +111,7 @@ git subtree push --prefix promo-page origin gh-pages
 | 无所谓、想一次配好别再管 | **① Actions 产物**（默认） |
 | 不想碰 Actions / token 没有 workflow scope | **② `--out docs`** ← 最推荐 |
 | 这个仓库本身就是个网站 | ③ 根目录 |
-| 必须让 `main` 干净、不要网站目录 | ④ gh-pages 分支 |
+| 必须让 `main` 干净、不要网站目录 | ④ gh-pages 分支（`deploy.sh` 一键推） |
 
 > ⚠️ **别同时开多种模式**：分支模式与 Actions 产物模式会互相覆盖，谁后跑谁赢，表现是「改了不生效」。
 
@@ -116,7 +127,8 @@ git subtree push --prefix promo-page origin gh-pages
 | 选了 `/docs` 后构建失败，提示 missing docs folder | `/docs` 目录被删或改名了 |
 | 推 workflow 文件 403 | token 缺 `workflow` scope → `gh auth refresh -s workflow` |
 | 页面里某张图 404 | 引用了 `.github/` 下的资源（该路径被 Pages 硬封锁），或用了绝对路径 |
-| 改了 `promo-page/` 但线上没变，且工作流没跑 | 工作流的 `paths` 只监听 `__SITE_DIR__/**`；或用的是分支模式而目录名不是 `/docs` |
+| 改了 `promo-page/` 但线上没变，且工作流没跑 | 工作流的 `paths` 只监听 `__SITE_DIR__/**`；或用的是分支模式而目录名不是 `/docs`；或分支模式但没重跑 `deploy.sh` |
+| `gh-pages` 已推好、Pages 仍 404 | 只推了分支，没把 Pages 指向它 → `pages.sh gh-pages <owner/repo> --apply`，或 `deploy.sh --set-pages` |
 | 私有仓库的 Pages 会不会也私有？ | **不会** —— Pages 站点一律公网可见，敏感内容别放上去 |
 
 ---
@@ -134,3 +146,17 @@ bash scripts/pages.sh workflow <owner/repo> --apply    # 模式 ①
 - 默认 **dry-run**（只打印将要执行的 `gh api` 命令），确认无误再加 `--apply`。
 - 会自动判断用 `PUT`（改已有站点）还是 `POST`（首次创建）。
 - 前提：`gh` 已登录、对仓库有 admin 权限、仓库已推到 GitHub。
+
+## `scripts/deploy.sh` 速查（模式 ④ 专用）
+
+```bash
+bash scripts/deploy.sh <目标目录>                  # 建/更新本地发布分支 + 尽力 push
+bash scripts/deploy.sh <目标目录> --set-pages      # 顺带把 Pages 指向该分支
+bash scripts/deploy.sh <目标目录> --dry-run        # 只看计划
+bash scripts/deploy.sh <目标目录> --no-push        # 只更新本地分支
+bash scripts/deploy.sh <目标目录> --dir docs       # 指定站点目录（默认自动探测）
+bash scripts/deploy.sh <目标目录> --repo owner/repo  # 本地没配 remote 时直接指定
+```
+
+- 退出码：`0` 完成 / `3` 不适用已跳过（不是 git 仓库、没有落地页目录）/ `1` 失败。
+- 幂等：内容没变就跳过提交与推送；`--dry-run` 不写任何 ref。

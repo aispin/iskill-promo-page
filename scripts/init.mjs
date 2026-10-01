@@ -125,8 +125,10 @@ if (branchMode) {
      3. 一条命令版：bash ${SKILL}/scripts/pages.sh docs <owner/repo> --apply`;
 } else if (args["branch-mode"]) {
   deploy = `部署（推 gh-pages 分支）：
-     仓库 Settings → Pages → Source: Deploy from a branch → gh-pages / (root)
-     推送后工作流会把 ${outName}/ 的内容强推到 gh-pages 根目录。`;
+     站点目录自带 .nojekyll，直接推成分支根即可。一条命令：
+       bash ${SKILL}/scripts/deploy.sh <目标目录>            # 建本地 gh-pages + 尽力 push
+       bash ${SKILL}/scripts/deploy.sh <目标目录> --set-pages # 顺带把 Pages 指向 gh-pages
+     或走工作流：推 main 后由 promo-page.yml 自动强推到 gh-pages。`;
 } else {
   deploy = `部署（Actions 产物）：
      仓库 Settings → Pages → Source: **GitHub Actions**
