@@ -101,7 +101,71 @@ function renderPricing(list) {
 
 顶部导航加一条 `<a href="#pricing" data-i18n="nav.pricing">价格</a>`，`content.js` 里补上对应键即可。
 
-## 六、尺寸与自检
+## 六、顶栏收缩优先级（改这里之前先读完）
+
+顶栏是**一行不换行**的 flex，里面塞了品牌、导航、语言分段、主题按钮、仓库胶囊五类东西。
+窄窗口下它必然不够宽 —— 关键是**由谁退让**。
+
+### 不定优先级会怎样
+
+浏览器默认按各元素的 min-content 均摊缺口，于是同时出现三种错：
+
+| 元素 | CSS 写法 | 默认行为 | 视觉结果 |
+|---|---|---|---|
+| `.brand` | `min-width: 0` | **唯一能被压到 0 的** | 品牌名塌成 `I…`，最后连图标都没了 |
+| `.nav a` | 没写 `nowrap` | 压到「最长单词」宽 | 「Get / started」在词中间折行，36px 的链接被撑到 59px，顶破 62px 的顶栏 |
+| `.btn`（仓库胶囊） | `white-space: nowrap` + flex 默认 `min-width:auto` | **完全不可压** | 268px 的长仓库名在任何宽度都纹丝不动 |
+
+根因不是某一条规则写错了，而是**整套优先级没定义**。修的时候要一次把四件事钉死：
+
+```css
+.topbar .wrap { flex-wrap: nowrap; }
+.brand   { flex: 0 1 auto; min-width: 0; }          /* 唯一允许退让的 */
+.nav     { flex: 0 0 auto; }
+.nav a   { white-space: nowrap; }                   /* 永不折行 */
+.seg, .btn-icon { flex: none; }                     /* 控件永不压缩 */
+.btn-repo { flex: 0 1 auto; min-width: 0; }         /* 可压：内层 .repo-text 带 ellipsis */
+```
+
+### 降级阶梯
+
+按「信息价值从低到高」逐个收，每档只做一件事：
+
+| 断点 | 动作 | 为什么在这里 |
+|---|---|---|
+| `≤1080` | `#repo-label { max-width: 80px }` | 长仓库名先截断成 `aispin/isk…` |
+| `≤960` | 顶栏 gap 14→10、导航 padding/字号各降一档 | 整体收紧，省下约 40px |
+| `≤900` | `#repo-label { display:none }`，胶囊变 **34px 方块图标** | 仓库名退场，与主题按钮同款 |
+| `≤720` | `.nav { display:none }` | 导航整体藏起（锚点仍可滚动到达） |
+| `≤560` | `.brand span { display:none }` | 手机只留 logo，不显示半截品牌名 |
+
+临界值是算出来的，不是拍脑袋：按
+`brand(273) + nav(302) + seg(79) + theme(34) + repo(268) + gap(14×5) = 1026`，
+加上 `.wrap` 左右各 22px 内边距 ⇒ **视口 ≈1070px** 是自然临界点，所以第一档放在 1080。
+换了品牌名长度 / 导航条目数，这个数要重算。
+
+### 三个必须记得的坑
+
+1. **第三档必须写 `flex: none`**：`.btn-repo` 基类带 `min-width: 0`，只写 `width: 34px` 图标会被压成 28px 的扁条。
+2. **`#repo-label` 被 `display:none` 后，可访问名会消失** —— `app.js` 里给 `#repo-link` 同步写了
+   `aria-label="GitHub · owner/repo"`，别删这行。
+3. **`?theme=` 不写就是跟随系统**，而无头 Chromium 默认报深色。想截浅色必须显式 `?theme=light`，
+   否则「浅色图」和「深色图」是同一张，还会误以为改主题没生效。
+
+### 验收（每个断点前后各取一档，共 4 档起）
+
+```bash
+for W in 1160 900 730 390; do
+  $N <ui-verify>/scripts/ui.mjs check --url "…/?reveal=all&lang=en" --width $W --height 900 --scale 1 --wait 2600 \
+    --case "顶栏不折行=[...document.querySelectorAll('.nav a')].every(a=>a.getBoundingClientRect().height<44)" \
+    --case "品牌未塌缩=document.querySelector('.brand').getBoundingClientRect().width>=24" \
+    --case "无横向滚动=document.documentElement.scrollWidth<=document.documentElement.clientWidth+1"
+done
+```
+
+三条断言分别对应三种独立失败模式，缺一不可 —— 只测 `无横向滚动` 会漏掉「没溢出但折行/塌缩」。
+
+## 七、尺寸与自检
 
 - 主断点：`1000px`（能力卡 3→2 列、Hero 两栏→单栏）、`720px`（其余全部单列、隐藏导航）。
 - 内联图标统一 **24×24 viewBox、`stroke-width=1.7`、圆角端点**，颜色跟随 `currentColor`。

@@ -65,6 +65,7 @@ window.PROMO = {
   name: "ISKILL-XXX",
   brand: "#7c5cff",  brand2: "#22d3ee",   // 品牌色会注入 CSS 变量
   repo: "https://github.com/aispin/iskill-xxx",
+  repoLabel: "aispin/iskill-xxx",         // 可选：顶栏胶囊显示的仓库名，不写就从 repo 推导
   install: "git clone …",                 // 顶部「复制安装命令」复制的内容
   lang: {
     zh: { meta, nav, hero, terminal, stats, compare, features, showcase, steps, faq, cta, footer },
@@ -74,6 +75,9 @@ window.PROMO = {
 ```
 
 外加 `index.html` 顶部那 8 行 meta（title / description / theme-color / og:*）。
+
+> 仓库名越长，顶栏越早进入降级（截断 → 只留图标）。`owner/repo` 超过 ~20 字符就别再手动加长 `repoLabel`，
+> 顶栏那点位置不够 —— 完整名字在正文与页脚都还有地方放。
 
 **页面八段**（按顺序）：Hero（标题+副标题+CTA+终端窗）→ 数字条 → 之前/现在对比 → 能力卡 → 实拍图 → 三步上手（带代码块）→ 问答 → 结尾 CTA。
 
@@ -100,6 +104,10 @@ window.PROMO = {
 4. **不要把资源放进 `.github/`**：GitHub Pages 硬封锁 `.github/*` 路径，引用了必 404。
 5. **品牌色只写在 content.js**，别去拷改 style.css —— 换色靠 CSS 变量注入。
 6. 图标全用 `icons.js` 的内联 SVG，**不用 emoji**（跨平台渲染不一致，且无法跟随品牌色）。
+7. **顶栏是一行不换行的 flex，必须显式定义收缩优先级**，不能指望浏览器自己分。不定优先级的结果一定是
+   三件事同时发生：品牌名塌成 `I…` + 导航在词中间折行（36px 的链接被撑到 59px、顶破 62px 顶栏）+
+   长仓库名胶囊纹丝不动。规则：**控件 `flex:none` 永不动 → 导航 `nowrap` 永不折行 → 品牌最后退**。
+   完整阶梯与临界值推导见 `references/design-guide.md` §六。
 
 ## 六、交付前自查
 
@@ -113,9 +121,20 @@ $N <ui-verify>/scripts/ui.mjs check --url "http://127.0.0.1:8899/?reveal=all&lan
   --case "步骤齐=document.querySelectorAll('#how .step').length>=3" \
   --case "问答齐=document.querySelectorAll('#faq details').length>=3" \
   --case "无占位残留=!/示例技能|Example skill|ISKILL-EXAMPLE/.test(document.body.innerText)"
+
+# 顶栏：≥4 档宽度都要过（折行 / 塌缩 / 横向滚动 是三种互相独立的失败模式，只测一种会漏）
+for W in 1160 900 730 390; do
+  $N <ui-verify>/scripts/ui.mjs check --url "http://127.0.0.1:8899/?reveal=all&lang=en" --width $W --height 900 --scale 1 --wait 2600 \
+    --case "顶栏不折行=[...document.querySelectorAll('.nav a')].every(a=>a.getBoundingClientRect().height<44)" \
+    --case "品牌未塌缩=document.querySelector('.brand').getBoundingClientRect().width>=24" \
+    --case "无横向滚动=document.documentElement.scrollWidth<=document.documentElement.clientWidth+1"
+done
 ```
 
 人工再过一遍：① 中英切换后没有半句残留 ② 四变体（zh/en × light/dark）观感都对 ③ 没有横向滚动条 ④ 控制台无报错 ⑤ `assets/og.png` 存在。
+
+> ⚠️ 截图/自查时 `?theme=` 不写就是跟随系统，而无头浏览器默认报**深色** —— 想截浅色必须写 `?theme=light`，
+> 否则两张"不同主题"的图其实是同一张。
 
 ## 七、部署
 
@@ -149,7 +168,11 @@ bash scripts/pages.sh workflow aispin/iskill-xxx --apply     # 模式 ①
 
 | 现象 | 原因与解法 |
 |---|---|
+| **缩窄窗口时顶栏错乱**：导航折成两行、品牌名变 `I…`、右边仓库胶囊挤不掉 | 顶栏 flex 没定义收缩优先级。见 `references/design-guide.md` §六：`.nav a{white-space:nowrap}` + 控件 `flex:none` + `.brand{min-width:0}` 最后退，再按 1080/960/900/720/560 五档收 |
+| 窄屏下仓库图标被压成 28px 扁条 | 第三档只写了 `width:34px`，但继承了基类的 `min-width:0` → 补 `flex: none` |
+| 手机宽度出现横向滚动条 | 有元素既不可压又不肯让位。先量 `document.documentElement.scrollWidth - clientWidth`，再逐段注释 `* { outline: 1px solid red }` 找元凶 |
 | 整页截图下半部分空白 | 滚动入场动画没解除 → URL 加 `?reveal=all` |
+| 截「浅色版」和「深色版」两张图一模一样 | `?theme=` 没写、页面跟随了系统（无头浏览器默认深色）→ URL 显式加 `theme=light` |
 | 某张卡片截出来是纯背景 | 元素在视口外（见 iskill-ui-verify：脚本会自动撑高视口，仍失败就用 `--full` 整页截） |
 | 实拍图位置是空的 | 图片 `loading="lazy"` 未加载 → ui-verify 已在截图前顶成 eager；手写脚本时要注意 |
 | 英文版有空段落 | `content.js` 里 en 漏了同名键（zh 是 key 源，两边必须一一对应） |
