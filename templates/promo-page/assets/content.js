@@ -1,0 +1,189 @@
+/* ============================================================================
+ * iskill-promo-page · 内容（唯一需要逐技能改的文件）
+ *
+ * 结构：
+ *   PROMO.brand / brand2  —— 品牌色（会注入 CSS 变量，换色不用改样式）
+ *   PROMO.name / repo / install / license …—— 全局信息
+ *   PROMO.lang.zh / .en   —— 双语文案（键必须两边都有，缺了会显示成空）
+ *
+ * 文案里的 HTML 只允许少量行内标签（<code>、<b>），卡片描述走 innerHTML，
+ * 其余一律 textContent，别塞脚本。
+ *
+ * 本文件是「示例技能」，复制后请整体替换掉。
+ * ==========================================================================*/
+window.PROMO = {
+  name: "ISKILL-EXAMPLE",
+  brand: "#7c5cff",
+  brand2: "#22d3ee",
+  repo: "https://github.com/aispin/iskill-example",
+  repoLabel: "aispin/iskill-example",
+  install: "git clone https://github.com/aispin/iskill-example.git ~/.workbuddy/skills/iskill-example",
+  license: "MIT",
+
+  lang: {
+    /* ── 中文 ───────────────────────────────────────────────────────── */
+    zh: {
+      meta: {
+        title: "ISKILL-EXAMPLE · 把你的重复劳动压成一行",
+        description: "示例技能：一句话说清它替你省掉什么。"
+      },
+      a11y: { skip: "跳到主要内容" },
+      nav: { features: "能力", shots: "截图", how: "上手", faq: "问答" },
+
+      hero: {
+        badge: "WorkBuddy 技能",
+        titlePre: "把你的重复劳动",
+        titleAccent: "压成一行",
+        titlePost: "",
+        sub: "用一句话说清楚：谁在什么场景下，因为这个技能少做了什么。",
+        ctaPrimary: "复制安装命令",
+        ctaSecondary: "看源码",
+        meta1: "零依赖",
+        meta2: "本地运行",
+        meta3: "MIT 许可"
+      },
+      terminal: {
+        title: "zsh — iskill-example",
+        lines: [
+          [{ t: "$ ", c: "p" }, { t: "bash scripts/run.sh --fast", c: "k" }],
+          [{ t: "✓ ", c: "p" }, { t: "跑完了，用时 1.2s", c: "s" }]
+        ]
+      },
+
+      stats: [
+        { value: "135 → 1", label: "行代码变成一行命令", note: "手写样板被彻底消掉" },
+        { value: "0", label: "第三方依赖", note: "纯标准库，离线可用" },
+        { value: "3s", label: "端到端耗时", note: "本机实测" }
+      ],
+
+      compare: {
+        eyebrow: "对比",
+        title: "以前 vs 现在",
+        sub: "",
+        before: { title: "没有这个技能", items: ["每次都要重新写一遍样板", "容易踩坑，重试成本高"] },
+        after: { title: "有了这个技能", items: ["一行命令跑完", "坑已经写进文档"] }
+      },
+
+      features: {
+        eyebrow: "能力",
+        title: "它能做什么",
+        sub: "",
+        items: [
+          { icon: "terminal", title: "一行命令", desc: "把流程收进一个入口，参数化。" },
+          { icon: "grid", title: "批量处理", desc: "多个变体一次跑完。" },
+          { icon: "shield", title: "安全兜底", desc: "失败有明确提示，退出码可判。" }
+        ]
+      },
+
+      showcase: {
+        eyebrow: "实拍",
+        title: "看一眼真东西",
+        sub: "",
+        /* 放真截图（不是效果图）。items 为空时整个 section 自动隐藏。
+           建议用 iskill-ui-verify 自己跑出来：
+           ui.mjs shots --url ... --out promo-page/assets --name shot */
+        items: []
+      },
+
+      steps: {
+        eyebrow: "上手",
+        title: "三步跑起来",
+        sub: "",
+        items: [
+          { title: "拿到它", desc: "克隆到技能目录。", codeName: "bash", code: "# 克隆到技能目录\ngit clone https://github.com/aispin/iskill-example.git ~/.workbuddy/skills/iskill-example" },
+          { title: "跑一次", desc: "最常用的一条命令。", codeName: "bash", code: "bash scripts/run.sh --fast" }
+        ]
+      },
+
+      faq: {
+        eyebrow: "问答",
+        title: "常见问题",
+        items: [{ q: "需要联网吗？", a: "默认不需要，全部本地运行。" }]
+      },
+
+      cta: { title: "现在就来一发", desc: "克隆下来，30 秒看到效果。", primary: "去 GitHub 看看", secondary: "复制安装命令" },
+      footer: { license: "MIT 许可", madeWith: "由 iskill-promo-page 生成" }
+    },
+
+    /* ── English ────────────────────────────────────────────────────── */
+    en: {
+      meta: {
+        title: "ISKILL-EXAMPLE · One command instead of busywork",
+        description: "A sample skill: say in one line what it saves you."
+      },
+      a11y: { skip: "Skip to content" },
+      nav: { features: "Features", shots: "Screens", how: "Get started", faq: "FAQ" },
+
+      hero: {
+        badge: "WorkBuddy skill",
+        titlePre: "Turn your busywork into ",
+        titleAccent: "one command",
+        titlePost: "",
+        sub: "One sentence: who, in what situation, stops doing what because of this skill.",
+        ctaPrimary: "Copy install command",
+        ctaSecondary: "View source",
+        meta1: "Zero deps",
+        meta2: "Runs locally",
+        meta3: "MIT licensed"
+      },
+      terminal: {
+        title: "zsh — iskill-example",
+        lines: [
+          [{ t: "$ ", c: "p" }, { t: "bash scripts/run.sh --fast", c: "k" }],
+          [{ t: "✓ ", c: "p" }, { t: "done in 1.2s", c: "s" }]
+        ]
+      },
+
+      stats: [
+        { value: "135 → 1", label: "lines collapsed into one command", note: "boilerplate gone" },
+        { value: "0", label: "third-party dependencies", note: "stdlib only, works offline" },
+        { value: "3s", label: "end-to-end runtime", note: "measured locally" }
+      ],
+
+      compare: {
+        eyebrow: "Comparison",
+        title: "Before vs after",
+        sub: "",
+        before: { title: "Without it", items: ["Rewrite the boilerplate every time", "Easy to trip on known traps"] },
+        after: { title: "With it", items: ["One command does the job", "The traps are already documented"] }
+      },
+
+      features: {
+        eyebrow: "Features",
+        title: "What it does",
+        sub: "",
+        items: [
+          { icon: "terminal", title: "One entry point", desc: "The whole flow behind a single parameterised command." },
+          { icon: "grid", title: "Batch by default", desc: "Every variant in a single run." },
+          { icon: "shield", title: "Safe failures", desc: "Clear messages and a meaningful exit code." }
+        ]
+      },
+
+      showcase: {
+        eyebrow: "Screens",
+        title: "See the real thing",
+        sub: "",
+        items: []
+      },
+
+      steps: {
+        eyebrow: "Get started",
+        title: "Up and running in three steps",
+        sub: "",
+        items: [
+          { title: "Get it", desc: "Clone into your skills directory.", codeName: "bash", code: "# clone into the skills dir\ngit clone https://github.com/aispin/iskill-example.git ~/.workbuddy/skills/iskill-example" },
+          { title: "Run it once", desc: "The command you will use most.", codeName: "bash", code: "bash scripts/run.sh --fast" }
+        ]
+      },
+
+      faq: {
+        eyebrow: "FAQ",
+        title: "Frequently asked",
+        items: [{ q: "Does it need network access?", a: "No — everything runs locally." }]
+      },
+
+      cta: { title: "Give it a spin", desc: "Clone it and see results in 30 seconds.", primary: "Open on GitHub", secondary: "Copy install command" },
+      footer: { license: "MIT licensed", madeWith: "Built with iskill-promo-page" }
+    }
+  }
+};

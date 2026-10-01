@@ -1,0 +1,51 @@
+# iskill-promo-page · 备选部署方式（推 gh-pages 分支）
+#
+# 适合仓库的 Pages 已经设成 "Deploy from a branch" 的情况：
+# 本工作流把 promo-page/ 的内容强推到 gh-pages 分支根目录，零第三方 action。
+#
+# 用之前：Settings → Pages → Build and deployment → Source = "Deploy from a branch"，
+#         分支选 gh-pages / 目录选 /(root)。
+# 与 promo-page.yml 二选一，别同时开。
+
+name: promo-page (branch)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "promo-page/**"
+      - ".github/workflows/promo-page.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: promo-page-branch
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 冒烟检查
+        run: |
+          set -e
+          test -f promo-page/index.html || { echo "缺少 promo-page/index.html"; exit 1; }
+          test -f promo-page/assets/style.css || { echo "缺少 assets/style.css"; exit 1; }
+          echo "OK：promo-page 结构完整"
+
+      - name: 推送到 gh-pages
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          cd promo-page
+          git init -q -b gh-pages
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "deploy: promo-page @ ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
