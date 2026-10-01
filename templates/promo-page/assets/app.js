@@ -80,6 +80,8 @@
       btn.setAttribute("aria-label", theme === "dark" ? "切换到浅色" : "切换到深色");
       btn.dataset.theme = theme;
     }
+    /* 槽位里嵌的页面也要跟着换肤（走 postMessage，不重载 iframe） */
+    syncSlotFrames();
   }
 
   /* ── ② 语言 ───────────────────────────────────────────────────────── */
@@ -196,6 +198,8 @@
 
   /* 复制按钮的文案（随语言变），由 render() 每次刷新 */
   var UI = { copy: "复制", copied: "已复制", failed: "复制失败" };
+  /* 当前语言：槽位里的 iframe 在 load / 切主题时要拿它回推给子页 */
+  var LANG = "zh";
 
   function renderSteps(data, lang) {
     if (!data) return;
@@ -271,6 +275,81 @@
     });
   }
 
+  /* ── 槽位（可插拔扩展点） ──────────────────────────────────────────────
+   *
+   * 骨架里声明 <div class="slot" data-slot="名字">，这里按 content.js 的
+   * slots[名字] 往里填。两种形态：
+   *   html   —— 一段内联 HTML（可写成 {zh, en} 双语，切语言跟着换）
+   *   iframe —— 嵌一个自包含页面（如 usage.html）
+   *
+   * 「跟随宿主」刻意分成两条通道，各管一段：
+   *   · 首次加载 → 把当前 lang/theme 拼进 src 的 hash。hash 在子页自己的头脚本里
+   *     **最先**被读到，没有「监听器还没绑上」的竞态（这套在
+   *     iskill-generate-sponsors 的 index.html ↔ sponsors.html 之间已经踩过一遍）。
+   *   · 之后切换 → postMessage 推给子页，**不重载 iframe** —— 重载会丢子页状态
+   *     （用户可能已经切到某个 tab），还会闪一下。
+   *   · 子页 load 完再推一次，兜住「切语言早于子页 boot」那一瞬。
+   * 子页认不认这两条通道由它自己决定：不认只是不跟随，不会报错。
+   */
+  function slotText(v, lang) {
+    if (v == null) return "";
+    if (typeof v === "string") return v;
+    return v[lang] || v.zh || v.en || "";
+  }
+
+  function currentTheme() { return html.classList.contains("dark") ? "dark" : "light"; }
+
+  /* 子页若认这套协议，就能跟着宿主切主题/语言而不重载 */
+  function syncSlot(f, lang) {
+    if (!f || f.getAttribute("data-sync") === "off") return;
+    try {
+      f.contentWindow.postMessage({ promoSlotSync: { lang: lang, theme: currentTheme() } }, "*");
+    } catch (e) { /* 跨源 / 子页已销毁：静默即可 */ }
+  }
+  function syncSlotFrames() {
+    var fs = document.querySelectorAll("iframe.slot-frame");
+    [].forEach.call(fs, function (f) { syncSlot(f, f.getAttribute("data-lang") || LANG); });
+  }
+
+  function renderSlots(lang) {
+    var slots = P.slots || {};
+    var hosts = document.querySelectorAll("[data-slot]");
+    [].forEach.call(hosts, function (host) {
+      var name = host.getAttribute("data-slot");
+      var cfg = slots[name];
+
+      /* 没配置：清空 → :empty 命中 display:none。整块消失，且不占网格行，
+         所以「加了锚点但没配内容」的老页面视觉上零变化。 */
+      if (!cfg) { if (host.firstChild) host.innerHTML = ""; return; }
+
+      if (cfg.iframe) {
+        var f = host.querySelector("iframe.slot-frame");
+        if (!f) {
+          host.innerHTML = "";
+          f = el("iframe", "slot-frame");
+          f.setAttribute("loading", "lazy");
+          if (cfg.iframe.height) f.style.setProperty("--slot-h", cfg.iframe.height + "px");
+          if (cfg.iframe.sync === false) f.setAttribute("data-sync", "off");
+          f.addEventListener("load", function () { syncSlot(f, f.getAttribute("data-lang") || LANG); });
+          /* 主题/语言走 hash：首帧就一致（postMessage 赶不上子页的头脚本） */
+          var h = cfg.iframe.sync === false ? "" : "#lang=" + lang + "&theme=" + currentTheme();
+          f.src = cfg.iframe.src + h;
+          host.appendChild(f);
+        } else {
+          syncSlot(f, lang); /* 只推消息，不重载 */
+        }
+        f.setAttribute("data-lang", lang);
+        f.setAttribute("title", slotText(cfg.iframe.title, lang) || name);
+        return;
+      }
+
+      /* html 形态：双语时切语言会重渲染 */
+      if (typeof cfg.html !== "undefined") {
+        host.innerHTML = '<div class="slot-html">' + slotText(cfg.html, lang) + "</div>";
+      }
+    });
+  }
+
   function paintLinks() {
     var repo = P.repo || "#";
     var label = repoShort();
@@ -310,6 +389,8 @@
     renderShowcase(dict.showcase);
     renderSteps(dict.steps, lang);
     renderFaq(dict.faq);
+    LANG = lang;
+    renderSlots(lang); /* 槽位跟着语言重渲染（iframe 只推消息、不重载） */
     paintCopyTargets(lang);
     html.setAttribute("lang", lang === "zh" ? "zh-CN" : "en");
     if (dict.meta) {

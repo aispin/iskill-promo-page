@@ -1,7 +1,7 @@
 ---
 name: iskill-promo-page
-summary: 给任何 skill / 工具 / 项目生成落地推广页（中英双语 + 深浅色跟随系统），静态自包含、零依赖零构建，附一键推 gh-pages 与 GitHub Pages 各种发布方案。
-description: 当用户要给某个 skill、工具、开源项目做「落地页 / 推广页 / 介绍页 / landing page」，或要把静态页部署发布到 GitHub Pages / gh-pages 时使用。触发词：落地页、推广页、landing page、介绍页、主页、gh-pages、GitHub Pages、宣传页、部署落地页。产出 <目标>/promo-page/（或 --out docs/）自包含静态站点 + 可选 .github/workflows/promo-page.yml + scripts/deploy.sh（一键推发布分支），逐技能只需改一个内容文件。
+summary: 给任何 skill / 工具 / 项目生成落地推广页（中英双语 + 深浅色跟随系统），静态自包含、零依赖零构建，附一键推 gh-pages 与 GitHub Pages 各种发布方案，支持在 Hero 下方插入「槽位」嵌入本技能特有的内容（如自带样式的 usage.html，自动跟随主题/语言），以及可选的 Hero 赞助按钮模块。
+description: 当用户要给某个 skill、工具、开源项目做「落地页 / 推广页 / 介绍页 / landing page」，或要把静态页部署发布到 GitHub Pages / gh-pages，或要给已有落地页「增加赞助模块 / 加个赞助按钮 / 加打赏入口」，或要把某个自包含页面（usage.html 之类）嵌进落地页时使用。触发词：落地页、推广页、landing page、介绍页、主页、gh-pages、GitHub Pages、宣传页、部署落地页、增加赞助模块、赞助按钮、打赏入口、槽位、slot、嵌入 usage.html。产出 <目标>/promo-page/（或 --out docs/、--out . 铺到仓库根）自包含静态站点 + 可选 .github/workflows/promo-page.yml + scripts/deploy.sh（一键推发布分支）+ scripts/add-sponsor.mjs（显式触发才用的赞助按钮），逐技能只需改一个内容文件。
 ---
 
 # iskill-promo-page 落地推广页生成器
@@ -12,8 +12,9 @@ description: 当用户要给某个 skill、工具、开源项目做「落地页 
 
 ```
 <目标>/
-├── promo-page/                    ← 自包含静态站点，整体可直接发布（--out docs 则叫 docs/）
-│   ├── index.html                 ← 页面骨架（只需改顶部 8 行 meta）
+├── promo-page/                    ← 自包含静态站点，整体可直接发布
+│   │                                 （--out docs 则叫 docs/；--out . 则直接铺在仓库根）
+│   ├── index.html                 ← 页面骨架（改顶部 8 行 meta；Hero 按钮下方带 slot 锚点）
 │   ├── .nojekyll                  ← 别删：分支模式下这是「跳过 Jekyll」的开关
 │   └── assets/
 │       ├── content.js             ← ★ 唯一需要逐技能改的文件（双语内容）
@@ -25,6 +26,10 @@ description: 当用户要给某个 skill、工具、开源项目做「落地页 
 ```
 
 `file://` 双击 `index.html` 就能看（刻意不用 ES module，避免本地 CORS 拦截）；上传后也只用相对路径，`https://<user>.github.io/<repo>/` 子路径下正常。
+
+> 默认产出里**没有任何赞助痕迹**——多数技能不需要赞助模块，内置进去等于给所有人加一个用不上的按钮。
+> 用户**显式说「增加赞助模块」**时才跑 `scripts/add-sponsor.mjs`（见 §十），
+> 它会在 Hero 区 View Source 右侧加一个赞助按钮，弹层由 `iskill-generate-sponsors` 的 embed 片段提供。
 
 ## 二、铺骨架
 
@@ -39,6 +44,11 @@ $N $S --target /path/to/iskill-xxx
 #    （Pages 分支模式只认 / 和 /docs，选不了 promo-page/ —— 见 references/deploy-modes.md）
 $N $S --target /path/to/iskill-xxx --out docs
 
+# ⭐ 落地页**就是仓库首页**（旁边还躺着它要展示的 usage.html / sponsors.html 之类）：
+#    直接铺进仓库根，配「Deploy from a branch → main /(root)」，同样零工作流。
+#    逐文件铺，遇到同名文件默认跳过（不会覆盖 SKILL.md、scripts/ 或已有页面）。
+$N $S --target /path/to/iskill-xxx --out .
+
 # 仓库 Pages 已设成 "Deploy from a branch"（gh-pages 分支）时：
 $N $S --target /path/to/iskill-xxx --branch-mode
 
@@ -51,7 +61,7 @@ $N $S --target /path/to/iskill-xxx --force
 
 | 参数 | 作用 |
 |---|---|
-| `--out <name>` | 站点目录名，默认 `promo-page`。**传 `docs` 才能用免工作流的分支模式** |
+| `--out <name>` | 站点目录名，默认 `promo-page`。**传 `docs` 才能用免工作流的分支模式**；传 `.` = 直接铺进仓库根（落地页当仓库首页，逐文件铺、同名默认跳过） |
 | `--no-workflow` | 不生成 `.github/workflows/promo-page.yml` |
 | `--branch-mode` | 工作流模板换成「推 gh-pages 分支」 |
 | `--force` | 覆盖已存在的同名目录 / 工作流 |
@@ -97,6 +107,90 @@ window.PROMO = {
 > Hero 标题上方那个标签固定写「**AI 技能** / **AI skill**」，**不要写平台名**。这些技能是纯文本 + 脚本，
 > Claude Code、Cursor、Codex 等任何能读 SKILL.md 的 agent 都能装能用，写成某个平台专属会劝退一半人。
 
+### 槽位：把「本技能特有」的东西插进页面
+
+八个段落是通用骨架，但总有些技能想给落地页塞自己的东西（一个能点的演示、一段专属说明、
+一张比对表）。**槽位**就是为此留的：骨架里已经有锚点，你只管往 `content.js` 里声明。
+
+**锚点**（`index.html` 里，Hero 的 CTA 按钮下方、跨满两栏）：
+
+```html
+<div class="slot" data-slot="hero"></div>
+```
+
+**配置**（`content.js` 的**顶层** `slots`，注意不在 `lang.zh/en` 里 —— 槽位的「形态」与语言无关，
+只有里面的文案才分语言）：
+
+```js
+window.PROMO = {
+  // …
+  slots: {
+    hero: {
+      // 二选一，同时给时 iframe 优先
+      html: { zh: "…内联 HTML…", en: "…" },                 // ① 一段内容，可双语
+      iframe: {                                            // ② 嵌一个自包含页面
+        src: "usage.html",
+        height: 760,
+        title: { zh: "用法演示", en: "Live demo" }          // 无障碍标题，可省
+      }
+    }
+  }
+};
+```
+
+| | `html` 形态 | `iframe` 形态 |
+|---|---|---|
+| 用途 | 一段说明、几个链接、一张表 | 嵌一个**自带完整样式**的单文件页（如 `usage.html`） |
+| 样式 | 会被父页排版接管（`.slot-html` 下） | 完全独立，父页 CSS 进不去 |
+| 跟随语言/主题 | 双语直接切 | 见下 |
+
+**关键约定：不配 = 什么都没有。** 锚点为空时 `:empty` 命中 `display:none`，
+整块消失**且不占网格行** —— 所以给老技能的落地页加上这个锚点也是零变化。
+
+**iframe 怎么跟随宿主**（两条通道，各管一段）：
+
+| 时机 | 通道 | 为什么这么选 |
+|---|---|---|
+| 首次加载 | 把 `#lang=&theme=` 拼进 `src` | hash 在子页自己的头脚本里**最先**被读到，没有「监听器还没绑上」的竞态 |
+| 之后切换 | `postMessage` | **不重载 iframe** —— 重载会丢子页状态（用户可能已经切到某个 tab），还会闪 |
+
+子页要跟随就加这么一段（**不认也不报错，只是不跟随**；`sync: false` 可让父页彻底别发）：
+
+```js
+// 首帧：先读 hash
+var t = (location.hash.match(/theme=(light|dark)/) || [])[1];
+var l = (location.hash.match(/lang=(zh|en)/) || [])[1];
+// 之后：听父页推过来的
+window.addEventListener('message', function (e) {
+  var s = e.data && e.data.promoSlotSync;
+  if (!s) return;                       // s.lang = "zh"|"en"  s.theme = "light"|"dark"
+});
+```
+
+**子页自己要自带语言/主题开关时，记得「被嵌就收起」**。否则宿主顶栏一套、子页头部又一套，
+上下两个同样的 `中/EN` 和月亮按钮，看着像两张页面叠在一起。判定与样式都很短：
+
+```js
+var framed = true;                        // 跨源时读 window.top 会抛 → 也当被嵌
+try { framed = window.self !== window.top; } catch (e) {}
+document.documentElement.toggleAttribute('data-embedded', framed);
+```
+```css
+:root[data-embedded] .lang-sw, :root[data-embedded] #theme-btn { display: none; }
+```
+
+判定要放在**子页头脚本里**（`<style>` 之前），首帧就不闪；单独打开时开关照常出现，
+所以「能不能独立访问」这条能力一点没丢 —— 只是嵌进来时不再重复。（实例见
+`iskill-generate-sponsors/scripts/render-source.mjs` 生成的头脚本。）
+
+**要新增槽位**（不止 Hero 这一个位置）：在 `index.html` 目标 section 里加一行
+`<div class="slot" data-slot="随便什么名字"></div>`，再去 `slots` 里配同名键即可 ——
+`app.js` 认得任意 `[data-slot]`，**不用改 JS**。放在网格容器里就自动跨满整行
+（`.slot { grid-column: 1 / -1 }`）。
+
+> 实例：`ISkills/iskill-generate-sponsors/` 的落地页把它的 `usage.html`（源码复制工具）
+> 嵌在 Hero 槽位里 —— 首页一眼就能看到真东西，而不用再点走。
+
 
 ## 四、主题与语言（默认都跟随系统）
 
@@ -126,6 +220,7 @@ window.PROMO = {
    长仓库名胶囊纹丝不动。规则：**控件 `flex:none` 永不动 → 导航 `nowrap` 永不折行 → 品牌最后退**。
    完整阶梯与临界值推导见 `references/design-guide.md` §六。
 8. **安装路径讲「让 agent 装」，别让用户抄命令。** 一键复制的是说给 AI 的一句话（由 `repo` 推导）。
+9. **赞助模块默认不生成。** 模板里不放任何赞助痕迹，只有用户显式说「增加赞助模块」才跑 `add-sponsor.mjs`（§十）。
    写死 `~/.workbuddy/skills/` 这类路径等于替用户做了错决定 —— 装哪个目录取决于他用哪个 agent。
    手动安装方式作为**逃生口放进 FAQ**（"能不能不用 AI，手动装？"），而不是当成主推路径。
 
@@ -260,8 +355,57 @@ bash scripts/pages.sh workflow aispin/iskill-xxx --apply     # 模式 ①
 ## 九、扩展
 
 - 加/删段落：`index.html` 里删掉对应 `<section>`，`app.js` 里去掉那次 `render*` 调用。段落顺序即 DOM 顺序。
+- **插本技能特有的内容**：用**槽位**（见 §三 末尾）—— `content.js` 里配 `slots`，或在骨架加一行
+  `<div class="slot" data-slot="名字"></div>`，都不用改 JS。
+- **落地页当仓库首页**：`--out .` 铺进仓库根 + Pages「Deploy from a branch → main /(root)」，
+  适合「首页要展示同目录下的其它产物（`usage.html` / `sponsors.html`）」的场景。
 - 加图标：往 `assets/icons.js` 里加一条 24×24、`stroke-width=1.7` 的 SVG 字符串，然后 `icon: "新键名"`。
 - 改完页面**重新发布**：`bash <SKILL_DIR>/scripts/deploy.sh <目标目录>`（幂等，内容没变就不推）。
 - 改设计系统（间距、圆角、字体、动效）：见 `references/design-guide.md`。
 - 换部署方式：见 `references/deploy-modes.md`。
-- 参考实例：`ISkills/iskill-ui-verify/promo-page/`（紫青）、`ISkills/iskill-headroom-workbuddy/promo-page/`（品牌绿 + 真实控制台截图）。
+- 参考实例：`ISkills/iskill-ui-verify/promo-page/`（紫青）、`ISkills/iskill-headroom-workbuddy/promo-page/`（品牌绿 + 真实控制台截图）、
+  `ISkills/iskill-generate-sponsors/`（**根目录模式 + Hero 槽位嵌 `usage.html`**）。
+
+## 十、可选模块：Hero 赞助按钮（**默认不生成**）
+
+**触发条件：用户显式说「增加赞助模块 / 加个赞助按钮 / 加打赏入口」。** 没说不做——
+默认产出里一个字符的赞助痕迹都没有（见 §一 的说明）。
+
+```bash
+S=<SKILL_DIR>/scripts/add-sponsor.mjs
+
+# 加
+$N $S --page ./promo-page \
+  --qr "支付宝=~/收款码/alipay.jpg" --qr "微信=~/收款码/wechat.jpg" \
+  --paypal https://paypal.me/you --name ZEO --title "赞助支持 · 我的项目"
+
+# 撤（按 marker 精确摘除，恢复到没加过的样子）
+$N $S --page ./promo-page --remove
+```
+
+它做三件事，别的一概不碰：
+
+| 步骤 | 结果 |
+|---|---|
+| 调兄弟技能 `iskill-generate-sponsors --mode embed` | 产出 `assets/sponsor-embed.js`（Shadow DOM 自包含片段，与它自己的 popup 形态同一份样式/数据）+ `assets/sponsor/*.jpg` |
+| 往 `index.html` 注入 | Hero 区 **`#hero-repo`（View Source）右侧**的 `<button id="hero-sponsor" data-sponsor-open>` + `</body>` 前的 `<script defer>` |
+| 往 `assets/content.js` 补词条 | `hero.ctaSponsor` 中英各一条（不放的话语言切换时按钮文案不跟着变） |
+
+**为什么按钮用 `class="btn"` 而不加自己的 CSS**：复用页面已有的按钮样式，
+视觉与「复制安装提示词 / 看源码」完全一致，**零 CSS 改动**——这样也不会有「换设计系统忘了改这里」的隐患。
+
+**按钮的工作方式**：页面里任何带 `data-sponsor-open` 的元素都能开弹层（`add-sponsor` 只放了这一个）。
+弹层**自动跟随页面语言与深浅色**——它读 `<html lang>` 和 `<html class="dark|light">`，
+而 `app.js` 切语言/主题时正好改的就是这两个，所以**不需要任何接线**（片段在监听 `<html>` 的属性变化）。
+
+| 坑 | 说明 |
+|---|---|
+| 页面在 `docs/` 而不是 `promo-page/` | `--page ./docs` 即可，脚本不关心目录叫什么 |
+| 想改按钮文案 | `--label-zh "请我喝咖啡" --label-en "Buy me a coffee"` |
+| 弹层标题是中文（英文模式下也是） | 生成器没配英文标题。加 `--title-en "Sponsor · My Project"`（同理 `--tagline-en` / `--note-en`） |
+| 找了半天 `iskill-generate-sponsors` | 默认按「兄弟目录 → `~/.workbuddy/skills/`」探测；都不在就用 `--sponsors-dir <技能目录>` |
+| 重跑会重复注入吗 | 不会。按钮与脚本都由独占一行的 marker 包裹，**重跑只替换那一块**，字节级幂等 |
+| `--remove` 为什么不删文件 | 删文件不可逆。它只摘注入，并把该删的两个路径打印出来让你自己确认 |
+
+> ⚠️ `add-sponsor.mjs` 里的 marker 是 `<!-- promo-sponsor:btn -->` / `<!-- promo-sponsor:script -->`，
+> 与 `iskill-generate-sponsors` 给 README 用的 `<!-- sponsors:start -->` **不是一套**，别混。

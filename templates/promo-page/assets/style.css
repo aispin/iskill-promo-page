@@ -235,6 +235,33 @@ h1.hero-title { font-size: clamp(34px, 5.4vw, 58px); font-weight: 800; letter-sp
 .hero-meta span { display: inline-flex; align-items: center; gap: 6px; }
 .hero-meta svg { width: 14px; height: 14px; color: var(--ok); }
 
+/* ── 槽位（可插拔扩展点） ────────────────────────────────────────────────
+   骨架里 <div class="slot" data-slot="名字">，content.js 的 slots[名字] 决定内容。
+   关键约定：**没配置就什么都没有** —— 元素为空时 :empty 命中 display:none，
+   连网格行都不会生成，所以老页面加了这个锚点也是零变化。
+   ─────────────────────────────────────────────────────────────────────── */
+.slot { grid-column: 1 / -1; min-width: 0; }
+.slot:empty { display: none; }
+
+/* iframe 形态：高度由 content.js 的 height 决定（CSS 变量 --slot-h），
+   窄屏再压一道，免得在手机上占掉整屏。 */
+.slot-frame {
+  display: block; width: 100%; height: var(--slot-h, 640px);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel-solid); box-shadow: var(--shadow);
+}
+/* html 形态：一段内联内容，按正文排版 */
+.slot-html { font-size: 15px; color: var(--ink-2); }
+.slot-html p + p { margin-top: 10px; }
+.slot-html a { color: var(--brand); text-decoration: underline; text-underline-offset: 3px; }
+.slot-html code {
+  font-size: 0.9em; padding: 2px 6px; border-radius: 6px;
+  background: color-mix(in srgb, var(--brand) 12%, transparent); color: var(--ink);
+}
+@media (max-width: 720px) {
+  .slot-frame { height: min(var(--slot-h, 640px), 68vh); }
+}
+
 /* 终端窗 */
 .term {
   border-radius: var(--radius-lg); overflow: hidden;

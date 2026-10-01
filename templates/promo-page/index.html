@@ -99,6 +99,17 @@
         <div class="term-bar" id="term-bar"></div>
         <div class="term-body" id="term-body"></div>
       </div>
+
+      <!-- ══ 槽位 hero ══════════════════════════════════════════════════════
+           位置：CTA 按钮区下方、跨满 Hero 两栏（grid-column:1/-1）。
+           往这里放什么由 content.js 的 slots.hero 决定 —— 可以是一段 html，
+           也可以 iframe 嵌一个自包含页面（如 usage.html）。
+           没配置时这个 div 是空的，:empty 直接 display:none，**不占行、不留缝**，
+           所以既有技能的落地页完全不受影响。
+           要再加槽位：骨架里复制这一行、换个 data-slot 名字即可（app.js 认得
+           任意 [data-slot]），比如 <div class="slot" data-slot="after-faq"></div>
+           放进对应 section 的 .wrap 里。 -->
+      <div class="slot" data-slot="hero"></div>
     </div>
   </section>
 

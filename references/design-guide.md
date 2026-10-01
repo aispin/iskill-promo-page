@@ -184,3 +184,93 @@ done
 - 内联图标统一 **24×24 viewBox、`stroke-width=1.7`、圆角端点**，颜色跟随 `currentColor`。
 - 改完至少看这四个：`1180×940@2x` 与 `390×844@3`，各配浅色/深色。
 - 字体栈只用系统字体（不下载 webfont）：`-apple-system → PingFang SC → Microsoft YaHei → Noto Sans SC`，英文数字回落到 `Segoe UI / Roboto / Helvetica`。
+
+## 八、槽位（可插拔扩展点）
+
+八段是通用骨架，但总有些技能要给自己的落地页塞专属内容。**槽位**就是留的口子，
+设计目标只有两条：**不配置时绝对不可见**、**插内容不需要改 JS**。
+
+### 契约
+
+| 角色 | 位置 | 内容 |
+|---|---|---|
+| 锚点 | `index.html` 骨架 | `<div class="slot" data-slot="名字"></div>`（现成的一个叫 `hero`，在 Hero 的 CTA 下方） |
+| 内容 | `content.js` **顶层** `slots` | `slots: { 名字: { html \| iframe } }` |
+| 渲染 | `app.js` `renderSlots(lang)` | 遍历所有 `[data-slot]`，按名字取配置 |
+
+**为什么配置放顶层而不是 `lang.zh/en` 里**：槽位的「形态」（嵌哪个文件、多高）与语言无关，
+只有里面的文案才分语言 —— 塞进语言字典会让两份配置各写一遍 src/height，改一处漏一处。
+需要双语文案时，把那个字段写成 `{ zh, en }` 即可（`slotText()` 会挑）。
+
+### 三条约定
+
+1. **空锚点必须零占位。** 靠 `.slot:empty { display: none }` —— 注意锚点标签里
+   **不能有换行/空格**，CSS Level 3 的 `:empty` 把纯空白文本节点算作「非空」，
+   写成多行会留下一条网格缝。
+2. **切语言不能重载 iframe。** 重载会丢子页状态（用户已经切到某个 tab）并闪一下。
+   于是分两条通道：首帧写 `src` 的 `#lang=&theme=`（hash 在子页头脚本里最先被读到，
+   无竞态），之后一律 `postMessage` 推 —— 见 SKILL.md §三 的协议片段。
+3. **子页自带的语言/主题开关，被嵌时要收起。** 宿主顶栏已经有一套，子页头部再来一套，
+   就成了上下两个同样的控件，视觉上像两张页面叠在一起。子页头脚本里判
+   `window.self !== window.top` 打 `data-embedded`，CSS 一条规则藏掉即可
+   （跨源读 `window.top` 会抛，所以要 `try/catch` 且**默认当被嵌**）。
+   判定放在头脚本（`<style>` 之前）首帧就不闪；单独打开时开关照常在，
+   「能独立访问」这条能力不损失。实例：`iskill-generate-sponsors` 的 `usage.html`。
+
+### 高度
+
+`iframe.height` 经 CSS 变量 `--slot-h` 落地，窄屏再压一道
+（`@media (max-width:720px){ height: min(var(--slot-h), 68vh) }`）——
+否则一个 760px 的 iframe 在手机上会占掉整屏还多。
+
+**故意不做「自动量高」**：宿主与子页多半跨源（`file://` 下必然是），量不到；
+靠 `postMessage` 报高又容易和子页内部的 `vh` 单位形成「量高 → 改高 → 再量」的
+震荡循环。固定高度 + 内部滚动是可控的那一档。
+
+### 验收
+
+```bash
+# ① 不配 slots 时：锚点必须是 display:none，且页面高度与加锚点前一致
+$N <ui-verify>/scripts/ui.mjs check --url "…/?reveal=all" --width 1180 --height 900 --scale 1 \
+  --case "空槽位不占位=getComputedStyle(document.querySelector('[data-slot=hero]')).display==='none'"
+# ② 配了 iframe 后：首帧颜色/语言就得跟宿主一致（这是 hash 通道的功劳）
+#    在宿主页点一次主题切换，再读子页 documentElement —— 应当同步变（postMessage 通道）
+# ③ 子页被嵌时收起自身控件、单独打开时又在（读 contentDocument 必须同源 → 起 http 服务验）
+$N <ui-verify>/scripts/ui.mjs check --url "…/index.html?reveal=all" --width 1180 --height 900 --scale 1 --wait 3200 \
+  --case "子页已标记被嵌=document.querySelector('iframe.slot-frame').contentDocument.documentElement.hasAttribute('data-embedded')" \
+  --case "子页收起语言开关=getComputedStyle(document.querySelector('iframe.slot-frame').contentDocument.querySelector('.lang-sw')).display==='none'"
+$N <ui-verify>/scripts/ui.mjs check --url "…/usage.html" --width 1180 --height 900 --scale 1 \
+  --case "单独打开开关还在=getComputedStyle(document.querySelector('.lang-sw')).display!=='none'"
+```
+
+最后一对断言**必须成对** —— 只测「嵌进来时藏了」会漏掉「顺手把单独访问也藏了」这一类回归。
+
+## 九、为什么不用 React / Vite / Tailwind（决策记录）
+
+看到别的项目（如 `iskill-headroom-workbuddy` 的控制台）用 React 19 + Vite + Tailwind，很容易顺手动念
+「promo-page 是不是也该重构」。**结论：不重构。** 这条记录在这里，免得以后再被翻出来重议。
+
+**判据不是「有没有 React」，而是「需不需要运行时状态 / 服务端」。**
+
+| | promo-page 落地页 | headroom dashboard |
+|---|---|---|
+| 运行时状态 | 无（语言/主题两个开关，改 DOM 属性即可） | 有（5s 轮询、登录态、实时进度） |
+| 部署形态 | 静态托管（Pages `/` 或 `/docs`） | `dashboard.py` 单端口托管 |
+| 构建 | **无** | 有（`vite build` → `dist/`） |
+| 打开方式 | `file://` 双击即开 | 必须起服务 |
+
+上 React 会拆掉两条**写进 SKILL.md 卖点**的契约：
+
+1. **`file://` 双击即开** —— ESM `<script type="module">` 在 `file://` 下被 CORS 拦死，
+   打包成单文件 bundle 也不解决 `import` 的跨源问题；而现在的 `.js` 全是**经典脚本**，
+   双击就能看（`design-guide.md` §一 的三层主题兜底也是为此设计的）。
+2. **零依赖零构建** —— 改一行文案不需要 `npm i` + 等构建；SKILL.md 的 `summary` 明说
+   「零依赖、无构建」，`templates/promo-page/assets/` 里的东西复制出去就能用。
+   Tailwind 的 utility 类名还会把「改样式」从「改 12 个 CSS 变量」变成「读 40 个类名」。
+
+**该往哪走**：真需要状态/服务端，走 dashboard 那条路（React + 后端），别往这里塞。
+两者不是「谁替代谁」，是**两档工具对应两类页面** —— 静态介绍页用这档，带交互/数据的控制台用那档。
+`references/deploy-modes.md` 的模式 ③ 也是同一个道理：产物要静态托管，就不要引构建链。
+
+> 什么时候该改判据：如果哪天落地页要「在线跑一次真实初始化并展示结果」，那它就有状态了，
+> 该拆成 dashboard 式应用 —— 但那时它也不再是「落地页」了。

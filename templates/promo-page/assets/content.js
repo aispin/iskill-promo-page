@@ -31,6 +31,35 @@ window.PROMO = {
   */
   license: "MIT",
 
+  /* ── 槽位：往落地页里插入「这个技能特有的内容」 ──────────────────────────
+   *
+   * 骨架在 Hero 的 CTA 按钮下方留了 <div class="slot" data-slot="hero">，
+   * 想放东西就在这里声明。**不配 = 整块不存在**，不会留空行、不占网格行。
+   *
+   * 两种形态（二选一，同时给时 iframe 优先）：
+   *   html   —— 一段内联 HTML；写成 {zh, en} 就能跟着切语言
+   *   iframe —— 嵌一个自包含页面（自带样式的单文件页，如 usage.html）。
+   *             默认跟随本页语言 / 主题：首帧走 src 上的 #lang=&theme=，
+   *             之后切换走 postMessage（子页认这套协议才会跟随，降级无害）
+   *
+   * 子页要跟随就监听这条消息（不认也不报错，只是不跟随）：
+   *   window.addEventListener('message', function (e) {
+   *     var s = e.data && e.data.promoSlotSync;
+   *     if (!s) return;              // s.lang = "zh" | "en"; s.theme = "light" | "dark"
+   *   });
+   * 首帧还要先读一次 location.hash 里的 lang / theme —— postMessage 赶不上头脚本。
+   *
+   * 要**新增**槽位：在 index.html 骨架的目标 section 里加一行
+   *   <div class="slot" data-slot="随便什么名字"></div>
+   * app.js 认得任意 [data-slot]，不用改 JS。
+   *
+   * slots: {
+   *   hero: {
+   *     iframe: { src: "usage.html", height: 760, title: { zh: "用法演示", en: "Live demo" } }
+   *   }
+   * },
+   */
+
   lang: {
     /* ── 中文 ───────────────────────────────────────────────────────── */
     zh: {

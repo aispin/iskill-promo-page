@@ -3,7 +3,8 @@
  * iskill-promo-page · init —— 把落地页骨架铺进目标技能目录
  *
  *   node scripts/init.mjs --target /path/to/iskill-xxx
- *                         [--out promo-page|docs]   ← 站点目录名，默认 promo-page
+ *                         [--out promo-page|docs|.]  ← 站点目录名，默认 promo-page
+ *                                                      `.` = 直接铺进仓库根
  *                         [--branch-mode]           ← 工作流模板换成「推 gh-pages 分支」
  *                         [--no-workflow]           ← 完全不生成工作流
  *                         [--force]
@@ -11,6 +12,16 @@
  * 做两件事：
  *   1) <target>/<out>/                             静态站点（自包含，整体可同步到 gh-pages）
  *   2) <target>/.github/workflows/promo-page.yml   部署工作流（--no-workflow 则跳过）
+ *
+ * ── 为什么要支持 --out .（仓库根） ─────────────────────────────────────
+ * 有些技能的落地页**就是仓库首页**：页面是 index.html，旁边还躺着它要展示的
+ * 其它产物（如 `usage.html` / `sponsors.html`），三者必须同目录，否则 iframe
+ * 用 `../` 引用会在单独部署站点时断掉。这种就 `--out .`，配
+ * 「Pages → Deploy from a branch → main /(root)」零工作流发布。
+ *
+ * 与 `--out promo-page` 的区别只在**怎么落盘**：根目录里已经有 SKILL.md、
+ * scripts/ 这些绝不能被站点覆盖的东西，所以根模式**逐文件**铺、遇到同名文件
+ * 默认跳过并列出（`--force` 才覆盖），而不是整目录 force 覆盖。
  *
  * ── 为什么会有 --out docs ─────────────────────────────────────────────
  * GitHub Pages 的「Deploy from a branch」**只认 `/`（根）与 `/docs` 两个目录**，
@@ -27,7 +38,7 @@
  */
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -36,7 +47,7 @@ const TPL = join(SKILL, "templates");
 
 const USAGE =
   "用法：node scripts/init.mjs --target /path/to/iskill-xxx " +
-  "[--out promo-page|docs] [--branch-mode] [--no-workflow] [--force]";
+  "[--out promo-page|docs|.] [--branch-mode] [--no-workflow] [--force]";
 
 function parse(argv) {
   const out = {};
@@ -62,36 +73,80 @@ if (!existsSync(target) || !statSync(target).isDirectory()) {
   process.exit(2);
 }
 
-// ── 站点目录名：必须是一层普通目录名 ──────────────────────────────────
-const outName = String(args.out || "promo-page").replace(/\/+$/, "");
-if (outName.includes("/") || outName === "." || outName === ".." || outName.startsWith(".")) {
+// ── 站点目录名：一层普通目录名，或 `.`（仓库根，当 Pages 首页用） ────────
+const rawOut = (args.out === true ? "" : String(args.out || "promo-page")).replace(/\/+$/, "");
+if (!rawOut) {
+  console.error("✗ --out 后面要跟一个目录名（或 . 表示仓库根）");
+  process.exit(2);
+}
+const isRoot = rawOut === ".";
+const outName = isRoot ? "." : rawOut;
+if (!isRoot && (outName.includes("/") || outName === ".." || outName.startsWith("."))) {
   console.error(`✗ --out 只能是一层目录名（不能含 /、不能以 . 开头）：${outName}`);
   process.exit(2);
 }
-if (outName !== "promo-page" && outName !== "docs") {
+if (!isRoot && outName !== "promo-page" && outName !== "docs") {
   console.warn(
     `⚠ --out ${outName}：Pages 的「Deploy from a branch」只认 / 与 /docs；` +
       `这个名字只能走 Actions 产物模式或推 gh-pages。`
   );
 }
 
-const dest = join(target, outName);
-if (existsSync(dest) && !args.force) {
-  const files = readdirSync(dest);
-  if (files.length) {
-    console.error(`✗ ${dest} 已存在且有内容（${files.length} 项）。要覆盖请加 --force。`);
-    process.exit(2);
+const dest = isRoot ? target : join(target, outName);
+
+/** 逐文件铺开（根目录模式专用）：同名文件默认**跳过**并列出，`--force` 才覆盖。
+ *  为什么不直接 cpSync({force:true}) —— 仓库根里躺着 SKILL.md / scripts/ /
+ *  已经生成好的页面，一次性整目录覆盖太危险；逐文件才有机会只碰该碰的。 */
+function copyInto(srcDir, dstDir, force, log) {
+  for (const name of readdirSync(srcDir)) {
+    const s = join(srcDir, name);
+    const d = join(dstDir, name);
+    if (statSync(s).isDirectory()) {
+      mkdirSync(d, { recursive: true });
+      copyInto(s, d, force, log);
+    } else if (existsSync(d) && !force) {
+      log.push(["skip", d]);
+    } else {
+      cpSync(s, d);
+      log.push(["copy", d]);
+    }
   }
+  return log;
 }
 
-mkdirSync(dest, { recursive: true });
-cpSync(join(TPL, "promo-page"), dest, { recursive: true, force: true });
-console.log(`✓ 静态站点：${dest}`);
+if (isRoot) {
+  const log = copyInto(join(TPL, "promo-page"), target, !!args.force, []);
+  const copied = log.filter((x) => x[0] === "copy");
+  const skipped = log.filter((x) => x[0] === "skip");
+  console.log(`✓ 静态站点：${dest}   （根目录模式，逐文件铺）`);
+  if (copied.length) console.log(`  · 写入 ${copied.length} 个：${copied.map((x) => relative(target, x[1])).join(", ")}`);
+  if (skipped.length) {
+    console.log(
+      `  · 已存在、跳过 ${skipped.length} 个（要覆盖加 --force）：${skipped.map((x) => relative(target, x[1])).join(", ")}`
+    );
+  }
+  const nj = join(target, ".nojekyll");
+  if (!existsSync(nj)) {
+    writeFileSync(nj, "");
+    console.log("  · 补了一个 .nojekyll（根目录发布时阻止 Jekyll 处理，否则下划线开头的文件会被吞）");
+  }
+} else {
+  if (existsSync(dest) && !args.force) {
+    const files = readdirSync(dest);
+    if (files.length) {
+      console.error(`✗ ${dest} 已存在且有内容（${files.length} 项）。要覆盖请加 --force。`);
+      process.exit(2);
+    }
+  }
+  mkdirSync(dest, { recursive: true });
+  cpSync(join(TPL, "promo-page"), dest, { recursive: true, force: true });
+  console.log(`✓ 静态站点：${dest}`);
+}
 
 // ── 工作流 ────────────────────────────────────────────────────────────
-// --out docs + 没显式要求工作流 → 默认不生成：docs 目录本身就是分支模式的发布源，
-// 再挂个工作流纯属多余（而且两者同时开是官方明说的坑）。
-const workflowImplicitOff = outName === "docs" && !args["branch-mode"] && args.workflow !== true;
+// --out docs / --out . + 没显式要求工作流 → 默认不生成：这两个位置本身就是
+// 「Deploy from a branch」的发布源，再挂个工作流纯属多余（两者同时开是官方明说的坑）。
+const workflowImplicitOff = (outName === "docs" || isRoot) && !args["branch-mode"] && args.workflow !== true;
 const wantWorkflow = !args["no-workflow"] && !workflowImplicitOff;
 
 if (wantWorkflow) {
@@ -109,15 +164,26 @@ if (wantWorkflow) {
   }
 } else if (workflowImplicitOff && !args["no-workflow"]) {
   console.log(
-    "· 未生成工作流（--out docs 默认免工作流）：docs/ 本身就是分支模式发布源。\n" +
+    `· 未生成工作流（--out ${isRoot ? "." : outName} 默认免工作流）：` +
+      `${isRoot ? "仓库根" : "docs/"}本身就是「Deploy from a branch」的发布源。\n` +
       "  确实想用 Actions 产物模式再加 --workflow。"
   );
 }
 
 // ── 收尾提示（按模式给对应的话术，别给互相矛盾的两套） ────────────────
-const branchMode = outName === "docs" && !wantWorkflow;
+const branchMode = (outName === "docs" || isRoot) && !wantWorkflow;
+/* 站点在根时，产物路径前面不带目录名 —— 提示语里得照实写，不然抄过去就错 */
+const site = isRoot ? "" : outName + "/";
 let deploy;
-if (branchMode) {
+if (isRoot && branchMode) {
+  deploy = `部署（根目录 = 站点根，零工作流）：
+     1. 把仓库推上去（站点文件已经在根上了）
+     2. 仓库 Settings → Pages → Source: **Deploy from a branch**
+        → Branch: main   Folder: **/(root)**
+     ⚠️ 这样**仓库根整个变成网站根**：SKILL.md、scripts/ 也会被静态服务公开。
+        本仓库本来就是公开的话无所谓；介意就把站点挪进 docs/（--out docs）。
+     3. 一条命令版：bash ${SKILL}/scripts/pages.sh root <owner/repo> --apply`;
+} else if (branchMode) {
   deploy = `部署（零工作流）：
      1. 把 ${outName}/ 提交并推送
      2. 仓库 Settings → Pages → Source: **Deploy from a branch**
@@ -138,13 +204,15 @@ if (branchMode) {
 
 console.log(`
 下一步（逐技能唯一要做的事）：
-  1. 改 ${outName}/assets/content.js —— 品牌色、仓库地址、中英文案
+  1. 改 ${site}assets/content.js —— 品牌色、仓库地址、中英文案
      （安装提示词不用写：由 repo 自动推导成「请帮我安装 Skill：<repo>，并告诉我它的用法」）
-  2. 改 ${outName}/index.html 顶部 8 行 meta（title / description / og:*）与 <html> 里的名称
-  3. 放图标与截图：${outName}/assets/favicon.svg、apple-touch-icon.png、shot-*.png
-  4. 本地自查（可选）：
+  2. 改 ${site}index.html 顶部 8 行 meta（title / description / og:*）与 <html> 里的名称
+  3. 装/配槽位（可选）：content.js 的 slots.hero —— 往 Hero 按钮下方插本技能特有的东西，
+     可写一段 html，也可嵌一个自包含页面（如 usage.html）。不配就是没有，不留空行。
+  4. 放图标与截图：${site}assets/favicon.svg、apple-touch-icon.png、shot-*.png
+  5. 本地自查（可选）：
        cd ${dest} && python3 -m http.server 8899
-  5. 截图验收（若装了 iskill-ui-verify）：
+  6. 截图验收（若装了 iskill-ui-verify）：
        node <ui-verify>/scripts/ui.mjs shots --url http://127.0.0.1:8899/ --out /tmp/promo \\
          --matrix "theme=light,dark" --matrix "lang=zh,en"
 

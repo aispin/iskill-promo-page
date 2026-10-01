@@ -18,7 +18,7 @@
 |---|---|---|
 | 子目录发布 + **零工作流** | ✅ | 只有一个解：目录必须叫 `docs/` → `init.mjs --out docs` |
 | 子目录叫 `promo-page/` | ✅ | 但必须用工作流（Actions 产物 或 推 gh-pages） |
-| 站点放仓库根 + 零工作流 | ✅ | 把站点内容搬到 `/`（见模式 ③） |
+| 站点放仓库根 + 零工作流 | ✅ | `init.mjs --out .`（逐文件铺，同名跳过）→ 见模式 ③ |
 | 任意目录名 + 零工作流 | ❌ | 不存在这条路 |
 
 > 实测（2026-10-01，`gh api repos/<owner>/<repo>/pages`）：
@@ -62,6 +62,12 @@ bash scripts/pages.sh docs <owner/repo> --apply      # 一条命令版
 
 把站点内容直接放在仓库根（`index.html` + `assets/` 在根目录）。
 
+```bash
+node scripts/init.mjs --target /path/to/iskill-xxx --out .
+# → 逐文件铺进仓库根（同名文件默认跳过，不会覆盖 SKILL.md / scripts/ / 已有页面）
+# → 并补一个 .nojekyll（根目录发布时必须有）
+```
+
 设置：**Settings → Pages → Deploy from a branch → main / `/(root)`**
 
 ```bash
@@ -69,9 +75,15 @@ bash scripts/pages.sh root <owner/repo> --apply
 ```
 
 - ✅ 同样零工作流。`iskill-generate-sponsors` 就是这么发布的。
+- ✅ **落地页旁边要摆别的产物时，只有这一条路**：像 `usage.html` / `sponsors.html`
+  这种和首页互相引用的文件必须同目录，否则单独发布站点时相对路径会断。
+  这也是「工具页为什么改名成 `usage.html`」的原因 —— 把 `index.html` 让给落地页。
 - ⚠️ **整个仓库根变成网站根** —— `SKILL.md`、`scripts/`、`.gitignore` 全部被静态服务公开。
-- ⚠️ 若根已有 `index.html`（比如技能自身就是网页应用）会打架。
-- 👉 适合「这个仓库本身就是一个网站」的仓库；**不适合** skill 仓库（skill 的根是给 WorkBuddy 读的）。
+  公开仓库无所谓（本来就能看），私有仓库要当心。
+- ⚠️ 根上如果已有 `index.html`，两者会打架 → `init.mjs --out .` 会**跳过**已存在的文件并
+  列出来，正好把这个冲突暴露给你，而不是默默覆盖。
+- 👉 适合「仓库首页应展示同目录下的产物」的技能仓库（`iskill-generate-sponsors`）；
+  首页只讲一个工具、不摆别的产物时，用 `--out docs` 更干净。
 
 ## ④ 推 `gh-pages` 分支
 
@@ -110,6 +122,7 @@ bash scripts/deploy.sh /path/to/iskill-xxx --dry-run     # 只看计划
 |---|---|
 | 无所谓、想一次配好别再管 | **① Actions 产物**（默认） |
 | 不想碰 Actions / token 没有 workflow scope | **② `--out docs`** ← 最推荐 |
+| 落地页要和同目录的其它产物（`usage.html` 等）互相引用 | ③ 根目录（`--out .`） |
 | 这个仓库本身就是个网站 | ③ 根目录 |
 | 必须让 `main` 干净、不要网站目录 | ④ gh-pages 分支（`deploy.sh` 一键推） |
 
