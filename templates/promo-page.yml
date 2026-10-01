@@ -1,10 +1,15 @@
 # iskill-promo-page · 默认部署方式（GitHub Actions 产物）
 #
-# 把 <repo>/promo-page/ 整个目录作为静态站点发布。
+# 把 <repo>/__SITE_DIR__/ 整个目录作为静态站点发布。
 # 与 promo-page-branch.yml 二选一，别同时开。
 #
 # ⚠️ 首次使用需在仓库 Settings → Pages → Build and deployment
 #    把 Source 设为 "GitHub Actions"，否则本工作流会报 pages 未启用。
+#
+# ⚠️ 推送本文件需要 token 带 workflow scope：gh auth refresh -s workflow
+#
+# __SITE_DIR__ 由 scripts/init.mjs 按 --out 替换（promo-page 或 docs），
+# 模板里保留占位符是为了同一份工作流能服务两种目录名。
 
 name: promo-page
 
@@ -12,7 +17,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "promo-page/**"
+      - "__SITE_DIR__/**"
       - ".github/workflows/promo-page.yml"
   workflow_dispatch:
 
@@ -37,16 +42,17 @@ jobs:
       - name: 冒烟检查（首页与资源都在）
         run: |
           set -e
-          test -f promo-page/index.html || { echo "缺少 promo-page/index.html"; exit 1; }
-          test -f promo-page/assets/style.css || { echo "缺少 assets/style.css"; exit 1; }
-          grep -q "assets/content.js" promo-page/index.html || { echo "index.html 未引用 content.js"; exit 1; }
-          echo "OK：promo-page 结构完整"
+          D="__SITE_DIR__"
+          test -f "$D/index.html" || { echo "缺少 $D/index.html"; exit 1; }
+          test -f "$D/assets/style.css" || { echo "缺少 $D/assets/style.css"; exit 1; }
+          grep -q "assets/content.js" "$D/index.html" || { echo "index.html 未引用 content.js"; exit 1; }
+          echo "OK：$D 结构完整"
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: promo-page
+          path: __SITE_DIR__
 
       - id: deployment
         uses: actions/deploy-pages@v4

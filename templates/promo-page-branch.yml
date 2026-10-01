@@ -1,11 +1,17 @@
 # iskill-promo-page · 备选部署方式（推 gh-pages 分支）
 #
 # 适合仓库的 Pages 已经设成 "Deploy from a branch" 的情况：
-# 本工作流把 promo-page/ 的内容强推到 gh-pages 分支根目录，零第三方 action。
+# 本工作流把 __SITE_DIR__/ 的内容强推到 gh-pages 分支根目录，零第三方 action。
 #
 # 用之前：Settings → Pages → Build and deployment → Source = "Deploy from a branch"，
 #         分支选 gh-pages / 目录选 /(root)。
 # 与 promo-page.yml 二选一，别同时开。
+#
+# ⚠️ 推送本文件需要 token 带 workflow scope：gh auth refresh -s workflow
+# ⚠️ 若不想用任何工作流，直接把站点目录命名成 docs/ 走 main /docs 分支模式即可
+#    （Pages 只认 / 与 /docs，见 references/deploy-modes.md）。
+#
+# __SITE_DIR__ 由 scripts/init.mjs 按 --out 替换。
 
 name: promo-page (branch)
 
@@ -13,7 +19,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "promo-page/**"
+      - "__SITE_DIR__/**"
       - ".github/workflows/promo-page.yml"
   workflow_dispatch:
 
@@ -33,16 +39,17 @@ jobs:
       - name: 冒烟检查
         run: |
           set -e
-          test -f promo-page/index.html || { echo "缺少 promo-page/index.html"; exit 1; }
-          test -f promo-page/assets/style.css || { echo "缺少 assets/style.css"; exit 1; }
-          echo "OK：promo-page 结构完整"
+          D="__SITE_DIR__"
+          test -f "$D/index.html" || { echo "缺少 $D/index.html"; exit 1; }
+          test -f "$D/assets/style.css" || { echo "缺少 $D/assets/style.css"; exit 1; }
+          echo "OK：$D 结构完整"
 
       - name: 推送到 gh-pages
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          cd promo-page
+          cd __SITE_DIR__
           git init -q -b gh-pages
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
