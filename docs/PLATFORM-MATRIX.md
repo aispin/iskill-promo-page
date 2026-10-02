@@ -107,15 +107,17 @@ node scripts/scan-platform-code.mjs        # 重扫代码里的平台专属符�
 **2026-10-02 22:2x 复核：24/24 公开仓全部在线** —— `gh api .../pages` = `built`，
 且逐仓 `curl` 首页与 `assets/content.js` 双 200。
 
-**2026-10-02 23:2x 复核（`check-platform.mjs` 全量）**：`TOTAL=26  ✅=19 ⚠️=2 ❌=5`、
-`pages.built=24`、`SAME=23  DIFF=1  OFFLINE=2`。**唯一的 `DIFF` 正是 `app-icon`** ——
-本地徽章已改成 `mac-windows`，而线上还是旧的 `"macos"`，即表里 `app-icon` 那行**尚未重新发布**；
-跑一次 `deploy.sh iskill-app-icon --set-pages` 后即回到 `DIFF=0`。两个 `OFFLINE` 是
-`build-books` / `lang-scene-app` 的私有仓（免费计划开不了 Pages，属设计如此、非故障）。
+**2026-10-02 23:3x 复核（`check-platform.mjs` 全量，`app-icon` 已重新部署后）**：
+`TOTAL=26  ✅=19 ⚠️=2 ❌=5`、`pages.built=24`、**`SAME=24  DIFF=0  OFFLINE=2`**、退出码 `0`（零 ERROR）。
+两个 `OFFLINE` 是 `build-books` / `lang-scene-app` 的私有仓（免费计划开不了 Pages，属设计如此、非故障）。
+
+> 复核过程中 `app-icon` 一度是 `DIFF=1`（本地徽章已改 `mac-windows`、线上还是旧的 `"macos"`），
+> 跑一次 `deploy.sh iskill-app-icon --set-pages` 后即归零 —— 这正是「发布没跟上」这类漂移的典型形态，
+> 也是这套核验存在的意义：**改完徽章别忘了重新部署**。
 
 | 技能 | 线上 platform 徽章 | 状态 |
 |---|---|---|
-| `iskill-app-icon` | 仅 macOS → **macOS / Windows** | ⏳ 本地已升级，**待重新发布**（此刻线上仍是旧的「仅 macOS」，即 `DIFF=1` 那一条） |
+| `iskill-app-icon` | macOS / Windows | ✅ 200（本次由「仅 macOS」升级并已重新发布） |
 | `iskill-content-precheck` | 全平台 | ✅ 200 |
 | `iskill-copy-deslop` | 全平台 | ✅ 200 |
 | `iskill-crop-qrcode` | 仅 macOS | ✅ 200 |
