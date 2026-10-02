@@ -78,7 +78,10 @@ window.PROMO = {
   repoLabel: "aispin/iskill-xxx",         // 可选：顶栏胶囊显示的仓库名，不写就从 repo 推导
   // installPrompt: { zh, en },           // 可选：覆盖默认的安装提示词，可用 {repo}/{repoShort}/{name}
   lang: {
-    zh: { meta, ui, nav, hero, terminal, stats, compare, features, showcase, steps, faq, cta, footer },
+    zh: { meta, ui, nav, hero, terminal|chat, stats, compare, features, showcase, steps, faq, cta, footer },
+    // hero 右栏可视化：terminal（shell 输出，默认）或 chat（Agent 对话气泡，二选一，配了 chat 优先）。
+    // chat = { title, status, userLabel, agentLabel, messages:[{role:"user"|"agent", text, tag?}] }
+    // skill 面向 AI agent 时建议用 chat —— 展示「对话现场」比终端输出更贴切。
     en: { /* 同上，键一一对应，缺了会渲染成空 */ }
   }
 };

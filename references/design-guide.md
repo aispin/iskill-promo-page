@@ -61,6 +61,7 @@ footer
 |---|---|---|
 | `hero.*` / `nav.*` / `steps.title` … | `[data-i18n="key"]` | 走 `textContent`，**不支持 HTML** |
 | `terminal.lines` | `#term-body` | 每行是 `[{t:"文本", c:"p\|k\|s\|c"}]`，也可以是纯字符串 |
+| `chat` | 原位替换 `.term` | **与 terminal 二选一，配了 chat 优先**。Agent 对话窗（skill 的用户是 AI agent，展示「对话现场」比 shell 输出更贴切）。结构：`{title, status, userLabel, agentLabel, messages[]}`，message = `{role:"user"\|"agent", text, tag?}`，`text` 支持 `\n` 换行、**纯文本不解析 HTML**，`tag` 是气泡底部的小徽标（如「已读 SKILL.md」）。不配 = 维持终端窗，老页面零影响 |
 | `stats[]` | `#stats .grid` | `{value, label, note}` |
 | `compare.before/after` | `#compare .grid` | `{title, items[]}` |
 | `features.items[]` | `#features .grid` | `{icon, title, desc}`，**desc 走 innerHTML，可以用 `<code>`** |
