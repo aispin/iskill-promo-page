@@ -22,7 +22,7 @@
 | 任意目录名 + 零工作流 | ❌ | 不存在这条路 |
 
 > 实测（2026-10-01，`gh api repos/<owner>/<repo>/pages`）：
-> - `aispin/iskill-generate-sponsors` → `build_type=legacy`、`source=main/` —— 就是模式 ③，**零工作流**，正常在跑。
+> - `aispin/iskill-generate-sponsors` → 2026-10-02 已由 `source=main/` 迁移到 `gh-pages /(root)`（模式 ④），与 25 个 iskill 仓统一；此前是模式 ③ 根部署孤例。
 > - `aispin/aispin.github.io` → `build_type=legacy`、`source=master/` —— 用户主页仓库，同样是根目录分支模式。
 
 ---
@@ -74,7 +74,7 @@ node scripts/init.mjs --target /path/to/iskill-xxx --out .
 bash scripts/pages.sh root <owner/repo> --apply
 ```
 
-- ✅ 同样零工作流。`iskill-generate-sponsors` 就是这么发布的。
+- ✅ 同样零工作流（历史上 `iskill-generate-sponsors` 曾是这么发布的，2026-10-02 已迁到 gh-pages 模式 ④）。
 - ✅ **落地页旁边要摆别的产物时，只有这一条路**：像 `usage.html` / `sponsors.html`
   这种和首页互相引用的文件必须同目录，否则单独发布站点时相对路径会断。
   这也是「工具页为什么改名成 `usage.html`」的原因 —— 把 `index.html` 让给落地页。
@@ -82,7 +82,7 @@ bash scripts/pages.sh root <owner/repo> --apply
   公开仓库无所谓（本来就能看），私有仓库要当心。
 - ⚠️ 根上如果已有 `index.html`，两者会打架 → `init.mjs --out .` 会**跳过**已存在的文件并
   列出来，正好把这个冲突暴露给你，而不是默默覆盖。
-- 👉 适合「仓库首页应展示同目录下的产物」的技能仓库（`iskill-generate-sponsors`）；
+- 👉 适合「仓库首页应展示同目录下的产物」的技能仓库；
   首页只讲一个工具、不摆别的产物时，用 `--out docs` 更干净。
 
 ## ④ 推 `gh-pages` 分支
