@@ -102,27 +102,14 @@ window.PROMO = {
       steps: {
         eyebrow: "上手",
         title: "三步跑起来",
-        sub: "",
+        sub: "命令由 agent 跑，你只说要什么、看结果。",
         items: [
-          {
-            title: "交给 AI 装",
-            desc: "把提示词粘进对话框，agent 会自己拉代码、读文档，再告诉你怎么用。",
-            codeKey: "install"
-          },
-          {
-            title: "给目标技能铺一页骨架",
-            desc: "在目标技能目录外跑；--no-workflow 表示不生成 Actions 工作流。",
-            codeName: "bash",
-            code: "node scripts/init.mjs --target /path/to/iskill-xxx --out promo-page --no-workflow"
-          },
-          {
-            title: "发布到 GitHub Pages",
-            desc: "在 git 仓库里跑：建本地 gh-pages 分支、尽力推送，并把 Pages 指向它。",
-            codeName: "bash",
-            code: "bash scripts/deploy.sh /path/to/iskill-xxx --set-pages"
-          }
+          { title: "交给 AI 装", desc: "把这句话粘进对话框，agent 会自己拉代码、读文档，再告诉你用法。", codeKey: "install" },
+          { title: "说给哪个技能做页", desc: "铺骨架、写文案、部署都是它做；你只管提需求。", codeName: "prompt", code: "给 iskill-xxx 做一版落地页，中英双语，发布到 GitHub Pages。" },
+          { title: "打开线上地址看一眼", desc: "Pages 地址是 https://<用户名>.github.io/<仓库>/，你打开看效果；之后改文案只动 content.js 一个文件。" }
         ]
       },
+
 
       faq: {
         eyebrow: "问答",
@@ -233,27 +220,14 @@ window.PROMO = {
       steps: {
         eyebrow: "Get started",
         title: "Up and running in three steps",
-        sub: "",
+        sub: "The agent runs the commands. You say what you want and check the result.",
         items: [
-          {
-            title: "Let your agent install it",
-            desc: "Paste the line into the chat — it clones the repo, reads the docs, and tells you how to use it.",
-            codeKey: "install"
-          },
-          {
-            title: "Scaffold a page for your target",
-            desc: "Run from outside the target skill; --no-workflow skips the Actions workflow.",
-            codeName: "bash",
-            code: "node scripts/init.mjs --target /path/to/iskill-xxx --out promo-page --no-workflow"
-          },
-          {
-            title: "Publish to GitHub Pages",
-            desc: "Inside a git repo: builds a local gh-pages branch, tries to push, and points Pages at it.",
-            codeName: "bash",
-            code: "bash scripts/deploy.sh /path/to/iskill-xxx --set-pages"
-          }
+          { title: "Let your agent install it", desc: "Paste the line into the chat — it clones the repo, reads the docs, and tells you how to use it.", codeKey: "install" },
+          { title: "Say which skill needs a page", desc: "Scaffolding, copy and deploy are on it — you just state the requirement.", codeName: "prompt", code: "Build a promo page for iskill-xxx in Chinese and English and publish it to GitHub Pages." },
+          { title: "Open the live URL", desc: "Pages serves it at https://<user>.github.io/<repo>/ — open it and look. Later copy changes touch one file: content.js." }
         ]
       },
+
 
       faq: {
         eyebrow: "FAQ",

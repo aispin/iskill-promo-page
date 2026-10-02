@@ -143,14 +143,20 @@ window.PROMO = {
         items: []
       },
 
+      /* 三步的语义是固定的：**前两步给 agent，最后一步才轮到你**
+         —— 技能的使用者是 AI agent，不是敲命令的人。
+         ① 装：codeKey "install"（提示词自动推导，别手抄 URL）
+         ② 说一句你要什么：codeName "prompt"，是**你对 agent 说的话**，不是命令
+         ③ 验收：只有产物需要你亲自看/亲自操作时才出现（看报告、双击、浏览器登录…）
+            产物路径拿不准就别写 code 块 —— 编造路径比留空更糟 */
       steps: {
         eyebrow: "上手",
         title: "三步跑起来",
-        sub: "",
+        sub: "命令由 agent 跑，你只说要什么、看结果。",
         items: [
-          /* codeKey: "install" = 自动填入安装提示词（随语言切换），别手抄 URL */
           { title: "交给 AI 装", desc: "把这句话粘进对话框，agent 会自己拉代码、读文档，再告诉你用法。", codeKey: "install" },
-          { title: "跑一次", desc: "最常用的一条命令。", codeName: "bash", code: "bash scripts/run.sh --fast" }
+          { title: "说一句你要什么", desc: "需求说清就行，命令、参数、落盘路径都由 agent 决定。", codeName: "prompt", code: "帮我……（把你要的结果、关键约束说清楚）" },
+          { title: "验收产物", desc: "这一步才轮到你：打开它给你的报告/页面/文件，说一句行或不行。", codeName: "path", code: "<产物路径>" }
         ]
       },
 
@@ -232,10 +238,11 @@ window.PROMO = {
       steps: {
         eyebrow: "Get started",
         title: "Up and running in three steps",
-        sub: "",
+        sub: "The agent runs the commands. You only say what you want and check the result.",
         items: [
           { title: "Let your agent install it", desc: "Paste the line into the chat — it clones the repo, reads the docs, and tells you how to use it.", codeKey: "install" },
-          { title: "Run it once", desc: "The command you will use most.", codeName: "bash", code: "bash scripts/run.sh --fast" }
+          { title: "Say what you want", desc: "Describe the outcome; the agent picks the commands, flags and paths.", codeName: "prompt", code: "Help me … (say what you want plus the constraints that matter)" },
+          { title: "Check the result", desc: "Your turn: open the report / page / file it produced and say go or no-go.", codeName: "path", code: "<output path>" }
         ]
       },
 

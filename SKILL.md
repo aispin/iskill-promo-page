@@ -100,6 +100,10 @@ window.PROMO = {
 两个地方会用到它：① `#hero-copy` / `#cta-copy` 按钮；② `steps` 里写 `codeKey: "install"` 的那一步（会渲染成
 一个带品牌色描边的 `prompt` 代码块）。**别在 content.js 里手抄一遍 URL** —— 改仓库地址时只改一处。
 
+**steps 三步契约**（详情见 references/design-guide.md）：①装（`codeKey:"install"`）→ ②说一句你要什么
+（`codeName:"prompt"`，自然语言需求，不是命令）→ ③验收产物（需要人亲自看/操作才写；path 写得准才写 code 块）。
+不要在第 2/3 步给用户命令行——skill 的用户是 agent，命令由 agent 跑。
+
 `ui: { copy, copied, failed }` 是复制按钮的三种反馈文案，随语言切换；不写就回落成中文默认值。
 
 > 仓库名越长，顶栏越早进入降级（截断 → 只留图标）。`owner/repo` 超过 ~20 字符就别再手动加长 `repoLabel`，
