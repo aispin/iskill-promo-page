@@ -65,7 +65,8 @@ footer
 | `stats[]` | `#stats .grid` | `{value, label, note}` |
 | `compare.before/after` | `#compare .grid` | `{title, items[]}` |
 | `features.items[]` | `#features .grid` | `{icon, title, desc}`，**desc 走 innerHTML，可以用 `<code>`** |
-| `showcase.items[]` | `#shots .grid` | `{src, alt, caption}`，空数组隐藏整段 |
+| `showcase.items[]` | `#shots .grid` | `{src, alt, caption}`，空数组隐藏整段 —— **并连带隐藏导航里那条 `#shots`**（否则点「截图」跳到 `display:none` 的锚点，表现为「点了没反应」） |
+| 顶栏品牌名 | `.brand span` | 以 `content.js` 的 `name` 为真源，**每次渲染都刷一遍**。骨架里那句是模板占位，漏改就会顶着 `ISKILL-EXAMPLE` 上线 |
 | `steps.items[]` | `#how .list` | `{title, desc, codeName, code}`，`code` 里 `#` 开头会被着成注释；写 `codeKey:"install"` 则换成安装提示词（见下） |
 | `faq.items[]` | `#faq .list` | `{q, a}` |
 | `ui.{copy,copied,failed}` | 各处复制按钮 | 三种反馈文案，随语言切换 |

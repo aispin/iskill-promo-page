@@ -143,6 +143,24 @@ if (isRoot) {
   console.log(`✓ 静态站点：${dest}`);
 }
 
+// ── 顶栏品牌名占位 → 目标名 ───────────────────────────────────────────
+// 骨架里那句 <span>ISKILL-EXAMPLE</span> 是模板占位，**必须换掉**：
+// 漏改就会顶着 "ISKILL-EXAMPLE" 上线（script-launcher 就中过一次）。
+// 运行时还有一道保险：app.js 的 renderBrand() 每次渲染都用 content.js 的 name 覆盖它。
+// 这里做的是静态兜底 —— JS 没跑 / 被缓存时也不至于露出占位名。
+{
+  const dirName = resolve(target).split("/").pop() || "";
+  const brandName = /^iskill-/i.test(dirName) ? dirName.toUpperCase() : "";
+  const idxPath = join(dest, "index.html");
+  if (brandName && existsSync(idxPath)) {
+    const s = readFileSync(idxPath, "utf8");
+    if (s.includes("ISKILL-EXAMPLE")) {
+      writeFileSync(idxPath, s.split("ISKILL-EXAMPLE").join(brandName));
+      console.log(`✓ 顶栏品牌名：ISKILL-EXAMPLE → ${brandName}`);
+    }
+  }
+}
+
 // ── 工作流 ────────────────────────────────────────────────────────────
 // --out docs / --out . + 没显式要求工作流 → 默认不生成：这两个位置本身就是
 // 「Deploy from a branch」的发布源，再挂个工作流纯属多余（两者同时开是官方明说的坑）。
