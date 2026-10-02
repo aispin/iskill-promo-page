@@ -177,7 +177,7 @@ window.PROMO = {
         ]
       },
 
-      cta: { title: "现在就来一发", desc: "把提示词粘给 AI，30 秒看到效果。", primary: "去 GitHub 看看", secondary: "复制安装提示词" },
+      cta: { title: "现在就能在你的 AI Agent 里用它", desc: "把安装提示词粘给 AI，它几秒装好——你只管验收结果。", primary: "去 GitHub 看看", secondary: "复制安装提示词" },
       footer: { license: "MIT 许可", madeWith: "由 iskill-promo-page 生成" }
     },
 
@@ -268,7 +268,7 @@ window.PROMO = {
         ]
       },
 
-      cta: { title: "Give it a spin", desc: "Paste the prompt into your agent and see results in 30 seconds.", primary: "Open on GitHub", secondary: "Copy install prompt" },
+      cta: { title: "Use it in your AI Agent now", desc: "Paste the install prompt to your agent — it sets up in seconds, and you only check the result.", primary: "Open on GitHub", secondary: "Copy install prompt" },
       footer: { license: "MIT licensed", madeWith: "Built with iskill-promo-page" }
     }
   }

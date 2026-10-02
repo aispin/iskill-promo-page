@@ -77,6 +77,7 @@ footer
 
 反面教材（勿再犯）：第 2/3 步写 `cp -R templates/`、`npm test`、`node scripts/x.mjs --flag` 之类的命令行——那是开发者视角，等于教用户自己干活。
 | `faq.items[]` | `#faq .list` | `{q, a}` |
+| `cta.title` / `cta.desc` | `.cta` 结尾行动区 | 全页收尾的「行动召唤」。**面向 AI Agent，不写 curl / 命令行**：统一话术「现在就能在你的 AI Agent 里用它」+ 一句「把安装提示词粘给 AI 即可开用」（见 §三 安装提示词）。反面教材：写「用 curl 调它」「一条命令就能跑」是开发者视角，和全页「skill 的使用者是 AI agent」定位冲突——headroom 那次 curl 文案即此坑 |
 | `ui.{copy,copied,failed}` | 各处复制按钮 | 三种反馈文案，随语言切换 |
 
 ### 安装提示词（这是本模板的默认安装方式）
