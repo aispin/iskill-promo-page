@@ -343,6 +343,31 @@ bash scripts/pages.sh workflow aispin/iskill-xxx --apply     # 模式 ①
 > ⚠️ 推送 `.github/workflows/*.yml` 需要 token 带 `workflow` scope；`gho_` token 默认没有，推这类文件会 403
 > → 先 `gh auth refresh -s workflow`。**这正是模式 ② 的一个实际好处：完全不碰工作流文件。**
 
+### 7.3 批量发布（一堆仓库一次搞完）
+
+ISkills 工作区 24 个技能**统一走模式 ④（gh-pages 分支）**：零工作流文件、不会被 Actions 拖出红叉，
+且 `deploy.sh --set-pages` 自带「推送 + 核 sha + 配 Pages」三合一。
+
+```bash
+cd <工作区>
+DEP=iskill-promo-page/scripts/deploy.sh
+for d in iskill-a iskill-b iskill-c; do          # ⚠️ 见下方第 1 条，别改成 $LIST 变量
+  bash "$DEP" "$PWD/$d" --set-pages
+done
+```
+
+三条硬规矩（都实测踩过）：
+
+1. **`for d in $LIST` 在 zsh 里不拆分**（bash 才拆）→ 整串被当成一个目录名，报
+   `fatal: cannot change to '…': File name too long`。要内联列表，或用 `${=LIST}` / `${(z)LIST}`。
+2. **已在 `main` / `(root)` 上线的仓库别重跑** —— `--set-pages` 会把它的发布源改到 `gh-pages`，
+   等于改掉正在服务的配置。本工作区的 `iskill-generate-sponsors` 就属于这种，跳过。
+3. **仓库里若残留 `promo-page.yml`（Actions 版工作流）要先删掉**：分支模式下它会在 push 到
+   `promo-page/**` 时因「Pages 未设为 Actions」而失败，给仓库留个红叉。
+
+发布走代理、约 1 个仓库/分钟，放后台跑并把日志收好（`LOG=/tmp/pages-$(date +%H%M%S).log`），
+跑完再统一做线上验收（`curl` 拿 200 + 标题命中 + `assets/content.js` 可访问）。
+
 ## 八、排错表
 
 | 现象 | 原因与解法 |
@@ -357,7 +382,7 @@ bash scripts/pages.sh workflow aispin/iskill-xxx --apply     # 模式 ①
 | 英文版有空段落 | `content.js` 里 en 漏了同名键（zh 是 key 源，两边必须一一对应） |
 | 点完复制按钮，标签永久变成「复制」 | 老版 `app.js` 的 `bindCopy()` 把还原文案写死成 `"复制"` 了 —— 它会覆盖掉「复制安装提示词」这类标签。新版先存原文案再改，且只在自己还停在反馈文案时才还原（期间切了语言就不会被旧语言盖回去） |
 | 按钮复制出来还是 `git clone …` | 页面里还有老版 `app.js` / `content.js`（老版读 `PROMO.install`）。新版不看 `install`，改由 `repo` 推导提示词 —— 同步这两个文件即可自愈 |
-| Hero 标签写着「WorkBuddy 技能」 | 技能不只一个平台能用，改回「AI 技能 / AI skill」，别写平台名 |
+| Hero 标签写着「WorkBuddy 技能」 | 第 1 枚标签是 **agent 平台**，不能写（技能不只一个 agent 能用），改回「AI 技能 / AI skill」。**操作系统**兼容性不在这里，它在第 2 枚徽章（`content.js` 顶层 `platform`） |
 | 提示词块出现横向滚动条 | `.code-prompt pre` 少了 `white-space:pre-wrap` —— 长 URL 必须换行，不能靠滚动 |
 | 换品牌色没生效 | 改到 `style.css` 了 → 应该改 `content.js` 的 `brand`/`brand2` |
 | 切语言后 `<title>` 没变 | 正常：`<title>` 由 `dict.meta.title` 覆盖，检查该键是否存在 |
