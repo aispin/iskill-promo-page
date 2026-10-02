@@ -134,6 +134,19 @@ window.PROMO = {
 >
 > ⚠️ **标错比不写更糟** —— 用户照标签装了发现跑不了，比没标签伤害大。判据见 `content.js` 的注释。
 
+**26 个 iskill 技能当前的徽章口径台账 → `docs/PLATFORM-MATRIX.md`**（三档口径 + 逐技能判定依据 + 落地页在线状态）。
+改了任何技能的平台能力后，跑一次三方核验，别让徽章与代码事实漂移：
+
+```bash
+node scripts/check-platform.mjs            # 判定 ↔ 本地徽章 ↔ 线上徽章 + Pages 状态（退出码 1 = 有 ERROR）
+node scripts/check-platform.mjs --offline  # 不联网，只比 判定 ↔ 本地徽章
+node scripts/check-platform.mjs --md       # 顺便吐一张可贴进文档的大表
+node scripts/scan-platform-code.mjs        # 重扫代码里的平台专属符号（判定列「关键依据」的原料）
+```
+
+两个方向危害不同：**徽章比判定强 = ERROR**（`BADGE-STRONGER`，用户装了跑不了）；
+**徽章比判定弱 = WARN**（`BADGE-WEAKER`，保守但会劝退本可用的用户）。
+
 ### 槽位：把「本技能特有」的东西插进页面
 
 八个段落是通用骨架，但总有些技能想给落地页塞自己的东西（一个能点的演示、一段专属说明、
@@ -398,6 +411,7 @@ done
 | 站点打开是 README 而不是落地页 | 发布源目录选错（选到了根）→ 改 Folder；或用的是分支模式但目录名不是 `/docs` |
 | 页面报 Liquid / `{{ }}` 语法错 | 分支模式下 Jekyll 在处理文件 → 站点目录里必须有 `.nojekyll`（模板自带，别删） |
 | 改了 `promo-page/` 但线上没变 | ① 工作流 `paths` 没命中（目录改名了？）② 用的是分支模式而目录名不是 `/docs` ③ 两种模式同时开着互相覆盖 ④ 分支模式但**没重跑 `deploy.sh`** |
+| 徽章和技能实际能不能跑对不上 | 跑 `node scripts/check-platform.mjs`：它会比「`docs/PLATFORM-MATRIX.md` 的判定 ↔ 本地 `content.js` ↔ 线上 `content.js`」，并区分 `BADGE-STRONGER`（危险）/ `BADGE-WEAKER`（保守）/ `SYNC-DIFF`（发布没跟上） |
 | `deploy.sh` 打印 `⏭ 跳过` 并退出码 3 | 有意为之：目标不是 git 仓库，或目录里没有 `promo-page/`/`docs/`。先 `git init` / 先跑 `init.mjs` |
 | `deploy.sh` 说「没找到 GitHub 远端」但仓库明明在 GitHub | 本地仓库没配 remote。加 `--repo owner/repo`，或 `git remote add origin …`（很多仓库是 token 直推建的，从来没配过 remote） |
 | `deploy.sh` 重跑没产生新提交 | 幂等设计：站点内容与上次发布完全一致就不落空提交。改了页面自然会有 |
