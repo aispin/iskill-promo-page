@@ -100,11 +100,19 @@ window.PROMO = {
         meta2: "本地运行",
         meta3: "MIT 许可"
       },
-      terminal: {
-        title: "zsh — iskill-example",
-        lines: [
-          [{ t: "$ ", c: "p" }, { t: "bash scripts/run.sh --fast", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "跑完了，用时 1.2s", c: "s" }]
+      /* Hero 右栏默认用 chat（Agent 对话现场）—— skill 的用户是 agent，
+         展示「你说一句、它做一件」比展示 shell 输出贴切。
+         只有确实要展示命令输出时才改用 terminal（二选一，配了 chat 优先）。 */
+      chat: {
+        title: "AI Agent · 对话现场",
+        status: "在线",
+        userLabel: "你",
+        agentLabel: "AI",
+        messages: [
+          { role: "user", text: "帮我……（你的真实需求）" },
+          { role: "agent", text: "好 —— 我先读 references/… 确认做法，再跑脚本，最后把产物给你。", tag: "已读 references/…" },
+          { role: "user", text: "（追问一句）" },
+          { role: "agent", text: "（agent 的回答，尽量带一条可验证的事实）" }
         ]
       },
 
@@ -195,11 +203,16 @@ window.PROMO = {
         meta2: "Runs locally",
         meta3: "MIT licensed"
       },
-      terminal: {
-        title: "zsh — iskill-example",
-        lines: [
-          [{ t: "$ ", c: "p" }, { t: "bash scripts/run.sh --fast", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "done in 1.2s", c: "s" }]
+      chat: {
+        title: "AI Agent · live session",
+        status: "online",
+        userLabel: "You",
+        agentLabel: "AI",
+        messages: [
+          { role: "user", text: "Help me … (a real request)" },
+          { role: "agent", text: "Sure — I'll read references/… first, run the script, then hand you the result.", tag: "read references/…" },
+          { role: "user", text: "(one follow-up)" },
+          { role: "agent", text: "(the reply, ideally with one verifiable fact)" }
         ]
       },
 

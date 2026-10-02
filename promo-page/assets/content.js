@@ -37,16 +37,19 @@ window.PROMO = {
         meta2: "file:// 双击即开",
         meta3: "四种 Pages 发布模式"
       },
-      terminal: {
-        title: "zsh — iskill-promo-page",
-        lines: [
-          [{ t: "$ ", c: "p" }, { t: "node scripts/init.mjs --target ./iskill-xxx --out promo-page", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "静态站点：iskill-xxx/promo-page（index.html + 5 个 assets）", c: "s" }],
-          [{ t: "  ", c: "" }, { t: "· 只改 assets/content.js + index.html 顶部 meta", c: "c" }],
-          [{ t: "$ ", c: "p" }, { t: "bash scripts/deploy.sh ./iskill-xxx --set-pages", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "推到 gh-pages 分支，Pages 已指向它", c: "s" }]
+      chat: {
+        title: "AI Agent · 对话现场",
+        status: "在线",
+        userLabel: "你",
+        agentLabel: "AI",
+        messages: [
+          { role: "user", text: "给 iskill-xxx 做一版落地页，中英双语" },
+          { role: "agent", text: "铺一套零依赖静态页（file:// 双击即开），你只改 content.js 一个文件；Hero 右栏用 Agent 对话窗，平台标签按实际兼容性配。", tag: "已读 design-guide" },
+          { role: "user", text: "再发布到 GitHub Pages" },
+          { role: "agent", text: "走 gh-pages 分支模式：零工作流、无红叉、不动工作区。推完给你线上地址。" }
         ]
       },
+
 
       stats: [
         { value: "1 个文件", label: "逐技能唯一要改的内容文件", note: "assets/content.js —— 换色、换文案、换仓库都在这一处" },
@@ -155,16 +158,19 @@ window.PROMO = {
         meta2: "Double-click over file://",
         meta3: "Four Pages deploy modes"
       },
-      terminal: {
-        title: "zsh — iskill-promo-page",
-        lines: [
-          [{ t: "$ ", c: "p" }, { t: "node scripts/init.mjs --target ./iskill-xxx --out promo-page", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "site: iskill-xxx/promo-page (index.html + 5 assets)", c: "s" }],
-          [{ t: "  ", c: "" }, { t: "· edit only assets/content.js + the head meta", c: "c" }],
-          [{ t: "$ ", c: "p" }, { t: "bash scripts/deploy.sh ./iskill-xxx --set-pages", c: "k" }],
-          [{ t: "✓ ", c: "p" }, { t: "pushed to gh-pages, Pages now points at it", c: "s" }]
+      chat: {
+        title: "AI Agent · live session",
+        status: "online",
+        userLabel: "You",
+        agentLabel: "AI",
+        messages: [
+          { role: "user", text: "Build a promo page for iskill-xxx in Chinese and English" },
+          { role: "agent", text: "You get a dependency-free static page (double-click to open from file://) where the only file you touch is content.js. The hero shows an agent conversation, and the platform badge follows real compatibility.", tag: "read design-guide" },
+          { role: "user", text: "And publish it to GitHub Pages" },
+          { role: "agent", text: "gh-pages branch mode: no workflow, no red X, working tree untouched. I'll hand you the live URL when it's up." }
         ]
       },
+
 
       stats: [
         { value: "1 file", label: "the only content file to edit", note: "assets/content.js — colours, copy and repo all live here" },
