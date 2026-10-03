@@ -20,6 +20,9 @@ node scripts/scan-platform-code.mjs        # 重扫代码里的平台专属符�
 ```
 
 - 退出码 `1` = 存在 ERROR（`BADGE-STRONGER` 徽章比判定更强 / `SYNC-DIFF` 本地与线上不一致 / `OFFLINE` 公开仓但线上取不到），可用于发布前检查。
+- **私有仓跳过（2026-10-03 起）**：`check-platform.mjs` 顶部 `SKIP_PAGES` 清单（现含 `iskill-build-books` / `iskill-lang-scene-app`）
+  内的仓**不做线上探测、不查 Pages、sync 记 `SKIP`、归 INFO** —— 免费计划私有仓本就开不了 Pages，
+  探测必然 404，不是故障。若日后把仓改公开：从清单移除名字即恢复核验（脚本发现「清单内但已公开」会报 `SKIP-STALE` WARN 提醒）。
 - `scan-platform-code.mjs` **只给线索、不给档位**：同样是 `/Users/<name>`，包在 `try` 里带回退 = 跨平台；
   写死在主路径 = 仅 macOS。**档位必须由人读上下文确认**，确认结果写回本文件。
 
@@ -111,6 +114,10 @@ node scripts/scan-platform-code.mjs        # 重扫代码里的平台专属符�
 `TOTAL=26  ✅=19 ⚠️=2 ❌=5`、`pages.built=24`、**`SAME=24  DIFF=0  OFFLINE=2`**、退出码 `0`（零 ERROR）。
 两个 `OFFLINE` 是 `build-books` / `lang-scene-app` 的私有仓（免费计划开不了 Pages，属设计如此、非故障）。
 
+**2026-10-03 起：两个私有仓改为显式跳过** —— 用户决定保持私有，`check-platform.mjs` 的 `SKIP_PAGES` 清单
+把它们从核验里摘出（`SKIP=2  OFFLINE=0`），不再以 OFFLINE 形态出现在输出里。gh-pages 分支资产保留在仓里，
+哪天改公开，Pages 会自动构建，同时把仓名从清单移除即恢复核验。
+
 > 复核过程中 `app-icon` 一度是 `DIFF=1`（本地徽章已改 `mac-windows`、线上还是旧的 `"macos"`），
 > 跑一次 `deploy.sh iskill-app-icon --set-pages` 后即归零 —— 这正是「发布没跟上」这类漂移的典型形态，
 > 也是这套核验存在的意义：**改完徽章别忘了重新部署**。
@@ -141,12 +148,12 @@ node scripts/scan-platform-code.mjs        # 重扫代码里的平台专属符�
 | `iskill-viral-copywriter` | 全平台 | ✅ 200 |
 | `iskill-viral-teardown` | 全平台 | ✅ 200 |
 | `iskill-workbuddy-deepseek` | macOS 已实测 | ✅ 200 |
-| `iskill-build-books` | — | ⛔ 仓库**有意保持私有** → 免费计划不支持私有仓库 Pages（gh-pages 分支已推好，改公开即生效） |
-| `iskill-lang-scene-app` | — | ⛔ 同上 |
+| `iskill-build-books` | — | ⊘ 跳过（**有意私有**，2026-10-03 用户决定）—— 免费计划不支持私有仓库 Pages；gh-pages 分支已推好，日后改公开即自动生效 |
+| `iskill-lang-scene-app` | — | ⊘ 跳过（同上） |
 
 > 线上徽章与本文档判定对齐，**口径是「主流程平台」**：5 个「仅 macOS」= `crop-qrcode` / `github-publisher` /
 > `media-transcribe` / `pipeline-dashboard` / `super-mark`；⚠️ 档 2 个徽章写双平台、限定条件在正文（见三档口径）。
 >
 > `build-books` / `lang-scene-app` 这 2 个私有仓库的 gh-pages 分支已就位、`git push` 已完成；
-> **只欠「仓库可见性 = 公开」这一步**，改完 Pages 会自动开始构建（也可跑
-> `pages.sh gh-pages <owner/repo> --apply` 立即触发配置）。
+> **2026-10-03 用户决定保持私有、核验跳过**（见零节 `SKIP_PAGES`）。若日后改公开：Pages 会自动开始构建，
+> 也可跑 `pages.sh gh-pages <owner/repo> --apply` 立即触发配置，同时把仓名从 `SKIP_PAGES` 清单移除。

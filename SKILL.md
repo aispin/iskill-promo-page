@@ -141,6 +141,8 @@ window.PROMO = {
 node scripts/check-platform.mjs            # 判定 ↔ 本地徽章 ↔ 线上徽章 + Pages 状态（退出码 1 = 有 ERROR）
 node scripts/check-platform.mjs --offline  # 不联网，只比 判定 ↔ 本地徽章
 node scripts/check-platform.mjs --md       # 顺便吐一张可贴进文档的大表
+# 私有仓（脚本顶部 SKIP_PAGES 清单，2026-10-03 起）跳过线上探测与 Pages 检查：
+# sync=SKIP、归 INFO，不算 OFFLINE —— 免费计划私有仓开不了 Pages，探测必然 404，不是故障
 node scripts/scan-platform-code.mjs        # 重扫代码里的平台专属符号（判定列「关键依据」的原料）
 ```
 

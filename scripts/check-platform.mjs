@@ -23,6 +23,9 @@
  *   node scripts/check-platform.mjs --md          # 额外输出可贴进文档的 markdown 表
  *   node scripts/check-platform.mjs --json        # 机器可读
  *
+ * 私有仓：SKIP_PAGES 清单里的仓跳过线上探测与 Pages 检查（sync=SKIP、INFO 级），
+ * 不产生 OFFLINE —— 免费计划私有仓本就开不了 Pages，探测必然 404，不是故障。
+ *
  * 退出码：0 = 无 ERROR；1 = 有 ERROR（可用于 CI / 发布前检查）
  */
 import { execSync } from "node:child_process";
@@ -48,6 +51,15 @@ const ROOT = opt("--root", DEFAULT_ROOT);
 const GH = ["/opt/homebrew/bin/gh", "/usr/local/bin/gh", "/usr/bin/gh", "gh"]
   .find((p) => p === "gh" || fs.existsSync(p));
 const SITE = "https://aispin.github.io";
+
+/**
+ * 用户决定保持私有的仓库（2026-10-03 定）—— 跳过 Pages / 线上核验，不算 OFFLINE。
+ * 免费计划不支持私有仓 Pages，gh-pages 资产已就位，改公开即自动生效；
+ * 在此之前核验它们只会得到必然的 404，徒增噪音。
+ * 若日后把仓库改公开：把名字从这里移除即可恢复核验 ——
+ * 脚本发现「在清单内但已公开」会报 WARN（SKIP-STALE）提醒，防止清单过期。
+ */
+const SKIP_PAGES = new Set(["iskill-build-books", "iskill-lang-scene-app"]);
 
 /** 引擎 OS_LABEL（与 promo-page/assets/app.js 的 renderPlatformBadge 保持一致） */
 const OS_LABEL = {
@@ -150,14 +162,16 @@ async function main() {
     const v = verdicts[name] || { mark: "?", tier: "(未收录)" };
     const cf = findContent(name);
     const local = cf ? parsePlatform(fs.readFileSync(cf, "utf8")) : null;
-    const online = OFFLINE ? { skipped: true } : await fetchOnline(name);
-    const pg = NO_GH ? "-" : pagesStatus(name);
+    const skip = SKIP_PAGES.has(name);
+    const online = OFFLINE || skip ? { skipped: true } : await fetchOnline(name);
+    const pg = NO_GH || skip ? "-" : pagesStatus(name);
     const vis = NO_GH ? "?" : visibility(name);
 
     // 同步状态（本地 ↔ 线上）
     let sync = "-";
     if (!OFFLINE) {
-      if (online.err) sync = online.err.startsWith("HTTP") ? "OFFLINE" : "UNREACHABLE";
+      if (skip) sync = "SKIP";
+      else if (online.err) sync = online.err.startsWith("HTTP") ? "OFFLINE" : "UNREACHABLE";
       else if (!local) sync = "NO-LOCAL";
       else sync = local.raw === online.raw ? "SAME" : "DIFF";
     }
@@ -173,7 +187,11 @@ async function main() {
     if (sync === "OFFLINE" && vis === "PUB")
       issues.push({ sev: "ERROR", code: "OFFLINE", msg: "公开仓库但线上取不到 content.js" });
     if (sync === "OFFLINE" && vis === "PRV")
-      issues.push({ sev: "INFO", code: "PRIVATE-NO-PAGES", msg: "私有仓库（免费计划开不了 Pages），设计如此" });
+      issues.push({ sev: "INFO", code: "PRIVATE-NO-PAGES", msg: "私有仓库（免费计划开不了 Pages），设计如此 —— 可加入 SKIP_PAGES 清单显式跳过" });
+    if (skip && vis === "PRV")
+      issues.push({ sev: "INFO", code: "SKIP-PAGES", msg: "私有仓，用户决定跳过 Pages 核验（gh-pages 资产已就位，改公开即生效），非异常" });
+    if (skip && vis === "PUB")
+      issues.push({ sev: "WARN", code: "SKIP-STALE", msg: "在 SKIP_PAGES 清单但仓库已公开 —— 请从清单移除以恢复核验" });
 
     rows.push({ skill: name, vis, pg, mark: v.mark, tier: v.tier, local, online, sync, issues });
   }
@@ -202,7 +220,7 @@ async function main() {
   console.log(
     `TOTAL=${rows.length}  ✅=${cnt((r) => r.mark === "✅")}  ⚠️=${cnt((r) => r.mark === "⚠️")}  ❌=${cnt((r) => r.mark === "❌")}  ` +
     `未收录=${cnt((r) => r.mark === "?")}  |  sync.SAME=${cnt((r) => r.sync === "SAME")}  DIFF=${cnt((r) => r.sync === "DIFF")}  ` +
-    `OFFLINE=${cnt((r) => r.sync === "OFFLINE")}  |  pages.built=${cnt((r) => r.pg === "built")}`
+    `OFFLINE=${cnt((r) => r.sync === "OFFLINE")}  SKIP=${cnt((r) => r.sync === "SKIP")}  |  pages.built=${cnt((r) => r.pg === "built")}`
   );
 
   const errs = allIssues.filter((i) => i.sev === "ERROR");
@@ -223,7 +241,7 @@ async function main() {
     console.log("| 技能 | 仓库 | Pages | 判定 | 线上徽章 | 状态 |");
     console.log("|---|---|---|---|---|---|");
     for (const r of rows) {
-      const st = r.sync === "SAME" ? "✅ 200" : r.sync === "OFFLINE" ? "⛔ 未上线" : `⚠️ ${r.sync}`;
+      const st = r.sync === "SAME" ? "✅ 200" : r.sync === "SKIP" ? "⊘ 跳过（有意私有）" : r.sync === "OFFLINE" ? "⛔ 未上线" : `⚠️ ${r.sync}`;
       console.log(`| \`${r.skill}\` | ${r.vis === "PRV" ? "私有" : "公开"} | ${r.pg} | ${r.mark} | ${r.online.err || r.online.label || "-"} | ${st} |`);
     }
   }
