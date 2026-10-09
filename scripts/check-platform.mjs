@@ -50,7 +50,23 @@ const opt = (n, d) => {
 const ROOT = opt("--root", DEFAULT_ROOT);
 const GH = ["/opt/homebrew/bin/gh", "/usr/local/bin/gh", "/usr/bin/gh", "gh"]
   .find((p) => p === "gh" || fs.existsSync(p));
-const SITE = "https://aispin.github.io";
+// owner 不写死：--owner > env GH_OWNER > 从 ROOT 下任一仓库的 origin remote 推导
+function ownerFromGit(root) {
+  const candidates = [root];
+  try { for (const d of fs.readdirSync(root)) candidates.push(path.join(root, d)); } catch { /* ignore */ }
+  for (const c of candidates) {
+    try {
+      const url = execSync(`git -C ${JSON.stringify(c)} config --get remote.origin.url`, {
+        stdio: ["ignore", "pipe", "ignore"],
+      }).toString().trim();
+      const m = url.match(/github\.com[:/](.+?)\//i);
+      if (m) return m[1];
+    } catch { /* 下一个候选 */ }
+  }
+  return null;
+}
+const OWNER = opt("--owner", process.env.GH_OWNER || ownerFromGit(ROOT));
+const SITE = OWNER ? `https://${OWNER}.github.io` : null;
 
 /**
  * 用户决定保持私有的仓库（2026-10-03 定）—— 跳过 Pages / 线上核验，不算 OFFLINE。
@@ -109,6 +125,7 @@ function findContent(skill) {
 }
 
 async function fetchOnline(skill) {
+  if (!SITE) return { err: "no-owner（用 --owner 或 env GH_OWNER 指定）" };
   try {
     const res = await fetch(`${SITE}/${skill}/assets/content.js`, {
       signal: AbortSignal.timeout(15000),
@@ -121,9 +138,9 @@ async function fetchOnline(skill) {
 }
 
 function pagesStatus(skill) {
-  if (NO_GH || !GH) return "-";
+  if (NO_GH || !GH || !OWNER) return "-";
   try {
-    return execSync(`${GH} api repos/aispin/${skill}/pages --jq .status`, {
+    return execSync(`${GH} api repos/${OWNER}/${skill}/pages --jq .status`, {
       stdio: ["ignore", "pipe", "ignore"],
     }).toString().trim() || "-";
   } catch {
@@ -132,9 +149,9 @@ function pagesStatus(skill) {
 }
 
 function visibility(skill) {
-  if (NO_GH || !GH) return "?";
+  if (NO_GH || !GH || !OWNER) return "?";
   try {
-    const p = execSync(`${GH} api repos/aispin/${skill} --jq .private`, {
+    const p = execSync(`${GH} api repos/${OWNER}/${skill} --jq .private`, {
       stdio: ["ignore", "pipe", "ignore"],
     }).toString().trim();
     return p === "true" ? "PRV" : "PUB";

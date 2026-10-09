@@ -229,10 +229,10 @@ git -C "$ROOT" log -1 --format='  %h %s' "$BRANCH"
 # ── 5. 尽力推送 ───────────────────────────────────────────────────────
 PROXY=""; PUSH_URL="$ORIGIN_URL"
 if [ "$IS_GH" = 1 ]; then
-  PROXY="${GH_PROXY:-http://127.0.0.1:10080}"
+  PROXY="${GH_PROXY:-}"
   if [ -n "$GH_BIN" ]; then
     TOKEN="$("$GH_BIN" auth token 2>/dev/null || true)"
-    [ -n "$TOKEN" ] && PUSH_URL="https://${GH_USER:-aispin}:${TOKEN}@github.com/${SLUG}.git"
+    [ -n "$TOKEN" ] && PUSH_URL="https://${GH_USER:-oauth2}:${TOKEN}@github.com/${SLUG}.git"
   fi
 fi
 

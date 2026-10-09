@@ -1,0 +1,43 @@
+{
+  "name": "iskill-promo-page",
+  "private": true,
+  "type": "module",
+  "description": "落地页生成器；templates/promo-page/assets 引擎三件套为共享真源（iskillDeps 消费方请用 skill-deps 同步，sync-shared.mjs 已 legacy）",
+  "iskillShared": [
+    {
+      "path": "templates/promo-page/assets/app.js",
+      "description": "落地页运行时引擎（主题/语言/渲染/交互）"
+    },
+    {
+      "path": "templates/promo-page/assets/style.css",
+      "description": "落地页样式（零依赖纯静态，暗色走 .dark）"
+    },
+    {
+      "path": "templates/promo-page/assets/icons.js",
+      "description": "内联 SVG 图标集（24×24 stroke-based）"
+    }
+  ],
+  "iskillDeps": [
+    {
+      "skill": "iskill-promo-page",
+      "repo": "aispin/iskill-promo-page",
+      "path": "templates/promo-page/assets/app.js",
+      "version": "1.0.0",
+      "local": "promo-page/assets/app.js"
+    },
+    {
+      "skill": "iskill-promo-page",
+      "repo": "aispin/iskill-promo-page",
+      "path": "templates/promo-page/assets/style.css",
+      "version": "1.0.0",
+      "local": "promo-page/assets/style.css"
+    },
+    {
+      "skill": "iskill-promo-page",
+      "repo": "aispin/iskill-promo-page",
+      "path": "templates/promo-page/assets/icons.js",
+      "version": "1.0.0",
+      "local": "promo-page/assets/icons.js"
+    }
+  ]
+}

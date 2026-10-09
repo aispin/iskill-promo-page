@@ -35,7 +35,7 @@ description: 当用户要给某个 skill、工具、开源项目做「落地页 
 
 ```bash
 S=<SKILL_DIR>/scripts/init.mjs
-N=${NODE:-/Users/lv/.workbuddy/binaries/node/versions/22.22.2-3/bin/node}
+N=${NODE:-$(command -v node || echo node)}
 
 # 默认：Actions 产物模式（promo-page/ + 工作流）
 $N $S --target /path/to/iskill-xxx
@@ -477,3 +477,37 @@ $N $S --page ./promo-page --remove
 
 > ⚠️ `add-sponsor.mjs` 里的 marker 是 `<!-- promo-sponsor:btn -->` / `<!-- promo-sponsor:script -->`，
 > 与 `iskill-generate-sponsors` 给 README 用的 `<!-- sponsors:start -->` **不是一套**，别混。
+
+## 共享真源
+
+本仓库 `templates/promo-page/assets/` 的引擎三件套（`app.js` / `style.css` / `icons.js`）是
+**唯一真源**（文件头带 `@iskill-source` / `@iskill-version` 戳）；各实例仓库 `promo-page/assets/`
+下的是 vendored 副本（声明见各仓库 `package.json` 的 `iskillDeps`）。实例的 `content.js` /
+`index.html` 属于各技能私有，不在共享范围。
+
+- **改引擎文件必须同一 commit 升 `@iskill-version`**（bug 升 patch、加能力升 minor）
+- 升版后同步存量实例（替代已 legacy 的 `sync-shared.mjs`）：
+  ```bash
+  T=~/.workbuddy/skills/iskill-dep-sync/scripts/skill-deps.mjs
+  node $T check ~/WorkBuddy/ISkills/*     # 报 [UPDATE] 的就是落后实例
+  node $T sync  ~/WorkBuddy/ISkills/iskill-xxx   # 逐个升级（只写 iskillDeps 声明的 3 个文件）
+  ```
+- `scripts/sync-shared.mjs` 仍可用但已 **legacy**：无漂移检测、无版本管理，仅作兼容保留。
+
+## 依赖与自举
+
+本 skill 的依赖分层（agent 按此判断缺什么、装什么）：
+
+| 依赖 | 何时需要 | 缺失时 |
+| --- | --- | --- |
+| node ≥ 18 | 全部环节（init/check-platform 等） | `command -v node` 探测；无则装 Node |
+| git | 部署（deploy.sh/pages.sh） | `xcode-select --install`（macOS） |
+| gh（GitHub CLI） | 部署、Pages 配置、平台核验 | `brew install gh && gh auth login`；无 gh 时 deploy.sh 推送降级为打印手工命令 |
+| agent-browser | 截图验收（铁律 2，经 iskill-ui-verify） | `npm i -g agent-browser && agent-browser install`；探测链见 ui.mjs（env → PATH → WorkBuddy binaries） |
+| iskill-ui-verify | 截图验收 | `git clone https://github.com/aispin/iskill-ui-verify.git "$HOME/.workbuddy/skills/iskill-ui-verify"` |
+| iskill-generate-sponsors | 仅显式要赞助模块时（add-sponsor.mjs） | 同上克隆；或 `--sponsors-dir <技能目录>` 显式指定 |
+
+冷启动一键自检：`node ~/.workbuddy/skills/iskill-dep-sync/scripts/skill-deps.mjs env <SKILL_DIR>`。
+
+环境变量覆盖（**均无写死默认值**）：`NODE`、`GH`、`GH_PROXY`（默认不走代理）、`GH_USER`
+（默认 `oauth2`）、`--owner` / `GH_OWNER`（check-platform 的 GitHub owner，默认从仓库 remote 推导）。
