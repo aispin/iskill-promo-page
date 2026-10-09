@@ -486,10 +486,10 @@ $N $S --page ./promo-page --remove
 `index.html` 属于各技能私有，不在共享范围。
 
 - **改引擎文件必须同一 commit 升 `@iskill-version`**（bug 升 patch、加能力升 minor）
-- 升版后同步存量实例（替代已 legacy 的 `sync-shared.mjs`）。同步依赖 iskill-dep-sync——
-  本机未装时先安装：对 agent 说「请帮我安装 Skill：aispin/iskill-dep-sync」：
+- 升版后同步存量实例（替代已 legacy 的 `sync-shared.mjs`）。同步依赖 iskill-utils——
+  本机未装时先安装：对 agent 说「请帮我安装 Skill：aispin/iskill-utils」：
   ```bash
-  T=~/.workbuddy/skills/iskill-dep-sync/scripts/skill-deps.mjs
+  T=~/.workbuddy/skills/iskill-utils/scripts/skill-deps.mjs
   node $T check ~/WorkBuddy/ISkills/*     # 报 [UPDATE] 的就是落后实例
   node $T sync  ~/WorkBuddy/ISkills/iskill-xxx   # 逐个升级（只写 iskillDeps 声明的 3 个文件）
   ```
@@ -508,7 +508,7 @@ $N $S --page ./promo-page --remove
 | iskill-ui-verify | 截图验收 | `git clone https://github.com/aispin/iskill-ui-verify.git "$HOME/.workbuddy/skills/iskill-ui-verify"` |
 | iskill-generate-sponsors | 仅显式要赞助模块时（add-sponsor.mjs） | 同上克隆；或 `--sponsors-dir <技能目录>` 显式指定 |
 
-冷启动一键自检：`node ~/.workbuddy/skills/iskill-dep-sync/scripts/skill-deps.mjs env <SKILL_DIR>`。
+冷启动一键自检：`node ~/.workbuddy/skills/iskill-utils/scripts/skill-deps.mjs env <SKILL_DIR>`。
 
 环境变量覆盖（**均无写死默认值**）：`NODE`、`GH`、`GH_PROXY`（默认不走代理）、`GH_USER`
 （默认 `oauth2`）、`--owner` / `GH_OWNER`（check-platform 的 GitHub owner，默认从仓库 remote 推导）。
