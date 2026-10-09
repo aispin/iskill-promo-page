@@ -486,7 +486,8 @@ $N $S --page ./promo-page --remove
 `index.html` 属于各技能私有，不在共享范围。
 
 - **改引擎文件必须同一 commit 升 `@iskill-version`**（bug 升 patch、加能力升 minor）
-- 升版后同步存量实例（替代已 legacy 的 `sync-shared.mjs`）：
+- 升版后同步存量实例（替代已 legacy 的 `sync-shared.mjs`）。同步依赖 iskill-dep-sync——
+  本机未装时先安装：对 agent 说「请帮我安装 Skill：aispin/iskill-dep-sync」：
   ```bash
   T=~/.workbuddy/skills/iskill-dep-sync/scripts/skill-deps.mjs
   node $T check ~/WorkBuddy/ISkills/*     # 报 [UPDATE] 的就是落后实例
@@ -500,7 +501,7 @@ $N $S --page ./promo-page --remove
 
 | 依赖 | 何时需要 | 缺失时 |
 | --- | --- | --- |
-| node ≥ 18 | 全部环节（init/check-platform 等） | `command -v node` 探测；无则装 Node |
+| node ≥ 24 | 全部环节（init/check-platform 等） | `command -v node` 探测；无则装 Node |
 | git | 部署（deploy.sh/pages.sh） | `xcode-select --install`（macOS） |
 | gh（GitHub CLI） | 部署、Pages 配置、平台核验 | `brew install gh && gh auth login`；无 gh 时 deploy.sh 推送降级为打印手工命令 |
 | agent-browser | 截图验收（铁律 2，经 iskill-ui-verify） | `npm i -g agent-browser && agent-browser install`；探测链见 ui.mjs（env → PATH → WorkBuddy binaries） |

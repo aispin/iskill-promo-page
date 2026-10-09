@@ -1,2 +1,2 @@
 
-> 共享真源：`templates/promo-page/assets/{app.js,style.css,icons.js}` 为引擎唯一真源（改文件须同 commit 升 `@iskill-version`；26 个实例仓库的副本用 [iskill-dep-sync](https://github.com/aispin/iskill-dep-sync) 同步，`sync-shared.mjs` 已 legacy）。
+> 依赖同步：本仓库含 iskill 共享真源的 vendored 副本（清单见 `package.json` 的 `iskillDeps`），**不要手改**。使用前请同时安装 iskill-dep-sync：对 agent 说「请帮我安装 Skill：aispin/iskill-dep-sync」；用法见 SKILL.md「依赖同步」节。
